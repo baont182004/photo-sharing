@@ -341,25 +341,30 @@ const comments = [
   comment13,
 ];
 
-comments.forEach(function (comment) {
-  const photo = photos.filter(function (photo) {
+for (const comment of comments) {
+  const photo = photos.find(function (photo) {
     return photo._id === comment.photo_id;
-  })[0]; // Only one match. Return the content of the match inside the array
+  }); // Only one match. Return the content of the match
+
+  if (!photo) {
+    // If no matching photo is found, skip adding the comment.
+    continue;
+  }
 
   if (!photo.comments) {
     photo.comments = [];
   }
   photo.comments.push(comment);
-});
+}
 
 const userListModel = function () {
   return users;
 };
 
 const userModel = function (userId) {
-  for (let i = 0; i < users.length; i++) {
-    if (users[i]._id === userId) {
-      return users[i];
+  for (const user of users) {
+    if (user._id === userId) {
+      return user;
     }
   }
   return null;

@@ -1,0 +1,18 @@
+{
+  "name": "photo-sharing-v1-backend",
+  "version": "1.0.0",
+  "description": "Backend for Photo Sharing Application",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0"
+  }
+}
