@@ -11,6 +11,7 @@ import {
     Divider,
 } from "@mui/material";
 import { api, imageUrl } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 import { formatDate } from "../../utils/format";
 
 export default function UserComments() {
@@ -22,7 +23,7 @@ export default function UserComments() {
 
     const fetchPhotosForUsers = useCallback(async (users) => {
         const results = await Promise.allSettled(
-            (users || []).map((u) => api.get(`/photosOfUser/${u._id}`))
+            (users || []).map((u) => api.get(API_PATHS.photos.ofUser(u._id)))
         );
         return results.flatMap((res) =>
             res.status === "fulfilled" && Array.isArray(res.value) ? res.value : []
@@ -50,8 +51,8 @@ export default function UserComments() {
                 setError("");
 
                 const [userData, users] = await Promise.all([
-                    api.get(`/user/${userId}`),
-                    api.get(`/user/list`),
+                    api.get(API_PATHS.user.byId(userId)),
+                    api.get(API_PATHS.user.list()),
                 ]);
                 if (!alive) return;
                 setUser(userData);

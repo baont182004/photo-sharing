@@ -15,7 +15,7 @@ import {
 import { formatDate } from "../../utils/format";
 import ReactionButtons from "../reactions/ReactionButtons";
 import ConfirmDialog from "../common/ConfirmDialog";
-import { useToast } from "../../context/ToastContext";
+import useToastErrors from "../../hooks/useToastErrors";
 
 function canModifyComment(comment, currentUser) {
     if (!currentUser?._id) return false;
@@ -196,7 +196,7 @@ export default function PhotoComments({
     onEditComment,
     onDeleteComment,
 }) {
-    const { showToast } = useToast();
+    const { showError, showSuccess } = useToastErrors();
     const [editing, setEditing] = useState({});
     const [drafts, setDrafts] = useState({});
     const [saving, setSaving] = useState({});
@@ -233,7 +233,7 @@ export default function PhotoComments({
             await onEditComment?.(photoId, commentId, text);
             cancelEdit(commentId);
         } catch (err) {
-            showToast(err?.message || "Không thể cập nhật bình luận.", "error");
+            showError(err, "Không thể cập nhật bình luận.");
         } finally {
             setSaving((prev) => ({ ...prev, [commentId]: false }));
         }
@@ -247,9 +247,9 @@ export default function PhotoComments({
         setDeleting((prev) => ({ ...prev, [commentId]: true }));
         try {
             await onDeleteComment?.(photoId, commentId);
-            showToast("Đã xóa bình luận.", "success");
+            showSuccess("Đã xóa bình luận.");
         } catch (err) {
-            showToast(err?.message || "Không thể xóa bình luận.", "error");
+            showError(err, "Không thể xóa bình luận.");
         } finally {
             setDeleting((prev) => ({ ...prev, [commentId]: false }));
             setConfirmingDeleteId(null);

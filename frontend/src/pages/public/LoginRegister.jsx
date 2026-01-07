@@ -3,6 +3,7 @@ import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, TextField, Typography } from "@mui/material";
 import { api, setAuth } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 
 const emptyRegister = {
     first_name: "",
@@ -46,7 +47,7 @@ export default function LoginRegister() {
         setLoginLoading(true);
 
         try {
-            const data = await api.post("/admin/login", {
+            const data = await api.post(API_PATHS.admin.login(), {
                 login_name: loginForm.login_name,
                 password: loginForm.password,
             });
@@ -74,7 +75,7 @@ export default function LoginRegister() {
         try {
             const { login_name, password, first_name, last_name, location, description, occupation } = reg;
 
-            await api.post("/user", {
+            await api.post(API_PATHS.user.register(), {
                 login_name,
                 password,
                 first_name,

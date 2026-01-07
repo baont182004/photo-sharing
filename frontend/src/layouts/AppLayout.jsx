@@ -4,6 +4,7 @@ import { Link, Outlet, useMatch, useNavigate } from "react-router-dom";
 import { Box, Button } from "@mui/material";
 import TopBar from "../components/navigation/TopBar";
 import { api, clearAuth, getUser } from "../config/api";
+import { API_PATHS } from "../config/apiPaths";
 import UserSidebar from "../components/users/UserSidebar";
 
 export default function AppLayout() {
@@ -21,7 +22,7 @@ export default function AppLayout() {
 
     const handleLogout = async () => {
         try {
-            await api.post("/admin/logout", {});
+            await api.post(API_PATHS.admin.logout(), {});
         } catch {
         } finally {
             clearAuth();

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../config/api";
+import { API_PATHS } from "../config/apiPaths";
 
 export default function useUserSummaries(searchTerm = "") {
     const [users, setUsers] = useState(null);
@@ -17,15 +18,17 @@ export default function useUserSummaries(searchTerm = "") {
 
                 const data = await api.get(
                     searchTerm
-                        ? `/user/search?name=${encodeURIComponent(searchTerm)}`
-                        : "/user/list"
+                        ? API_PATHS.user.search(searchTerm)
+                        : API_PATHS.user.list()
                 );
                 if (!alive) return;
                 setUsers(data);
 
                 if (data && data.length > 0) {
                     const arrays = await Promise.all(
-                        data.map((u) => api.get(`/photosOfUser/${u._id}`).catch(() => []))
+                        data.map((u) =>
+                            api.get(API_PATHS.photos.ofUser(u._id)).catch(() => [])
+                        )
                     );
                     if (!alive) return;
                     setAllPhotos(arrays.flat());

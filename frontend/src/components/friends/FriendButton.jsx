@@ -2,6 +2,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { api, getUser } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 
 const STATUS = {
     NONE: "NONE",
@@ -22,7 +23,7 @@ export default function FriendButton({ userId, sx }) {
         setLoading(true);
         setError("");
         try {
-            const data = await api.get(`/api/friends/status/${userId}`);
+            const data = await api.get(API_PATHS.friends.status(userId));
             setStatus(data.status);
             setRequestId(data.requestId || null);
         } catch (err) {
@@ -76,7 +77,7 @@ export default function FriendButton({ userId, sx }) {
                         disabled={loading || !requestId}
                         onClick={() =>
                             handleAction(() =>
-                                api.del(`/api/friends/requests/${requestId}`)
+                                api.del(API_PATHS.friends.requestCancel(requestId))
                             )
                         }
                     >
@@ -91,10 +92,7 @@ export default function FriendButton({ userId, sx }) {
                             disabled={loading || !requestId}
                             onClick={() =>
                                 handleAction(() =>
-                                    api.post(
-                                        `/api/friends/requests/${requestId}/accept`,
-                                        {}
-                                    )
+                                    api.post(API_PATHS.friends.requestAccept(requestId), {})
                                 )
                             }
                         >
@@ -106,10 +104,7 @@ export default function FriendButton({ userId, sx }) {
                             disabled={loading || !requestId}
                             onClick={() =>
                                 handleAction(() =>
-                                    api.post(
-                                        `/api/friends/requests/${requestId}/decline`,
-                                        {}
-                                    )
+                                    api.post(API_PATHS.friends.requestDecline(requestId), {})
                                 )
                             }
                         >
@@ -125,7 +120,7 @@ export default function FriendButton({ userId, sx }) {
                         disabled={loading}
                         onClick={() =>
                             handleAction(() =>
-                                api.del(`/api/friends/${userId}`)
+                                api.del(API_PATHS.friends.unfriend(userId))
                             )
                         }
                     >
@@ -140,7 +135,7 @@ export default function FriendButton({ userId, sx }) {
                         disabled={loading}
                         onClick={() =>
                             handleAction(() =>
-                                api.post(`/api/friends/requests/${userId}`, {})
+                                api.post(API_PATHS.friends.requestSend(userId), {})
                             )
                         }
                     >

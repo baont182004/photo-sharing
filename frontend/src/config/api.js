@@ -1,4 +1,6 @@
 // src/config/api.js
+import { API_PATHS } from "./apiPaths";
+
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 const AUTH_EVENT = 'authchange';
 
@@ -85,7 +87,7 @@ export async function uploadPhoto(file, description = '') {
     form.append('uploadedphoto', file);
     if (description) form.append('description', description);
 
-    const res = await fetch(`${API_URL}/photos/new`, {
+    const res = await fetch(`${API_URL}${API_PATHS.photos.create()}`, {
         method: 'POST',
         headers: token ? { Authorization: `Bearer ${token}` } : {},
         body: form,

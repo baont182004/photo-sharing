@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Typography, Paper, Button, Box } from "@mui/material";
 import { api, getUser, imageUrl } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 import FriendButton from "../../components/friends/FriendButton";
 
 export default function UserDetail() {
@@ -17,7 +18,7 @@ export default function UserDetail() {
         let alive = true;
 
         (async () => {
-            const data = await api.get(`/user/${userId}`);
+            const data = await api.get(API_PATHS.user.byId(userId));
             if (alive) setUser(data);
         })();
 
@@ -33,7 +34,7 @@ export default function UserDetail() {
 
         (async () => {
             try {
-                const data = await api.get(`/photosOfUser/${userId}`);
+                const data = await api.get(API_PATHS.photos.ofUser(userId));
                 if (alive) setPhotos(data || []);
             } catch (err) {
                 if (alive) {

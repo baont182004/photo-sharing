@@ -14,8 +14,9 @@ import {
 } from "@mui/material";
 import { Link, useMatch, useNavigate } from "react-router-dom";
 import { api, getUser, getToken, uploadPhoto } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 import { useThemeMode } from "../../context/ThemeModeContext";
-import { useToast } from "../../context/ToastContext";
+import useToastErrors from "../../hooks/useToastErrors";
 
 export default function TopBar() {
     const yourName = "Nguyễn Thái Bảo - PTIT";
@@ -31,7 +32,7 @@ export default function TopBar() {
     const navigate = useNavigate();
     const fileRef = useRef(null);
     const { mode, toggleMode } = useThemeMode();
-    const { showToast } = useToast();
+    const { showError } = useToastErrors();
     const [uploading, setUploading] = useState(false);
     const [openUpload, setOpenUpload] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -57,7 +58,7 @@ export default function TopBar() {
 
         (async () => {
             try {
-                const user = await api.get(`/user/${matchedUserId}`);
+                const user = await api.get(API_PATHS.user.byId(matchedUserId));
                 if (!alive || !user) return;
 
                 if (photoMatch) setContextText(`Ảnh của ${user.first_name} ${user.last_name}`);
@@ -113,7 +114,7 @@ export default function TopBar() {
             if (u?._id) navigate(`/photos/${u._id}`);
             handleClose();
         } catch (err) {
-            showToast(err.message || "Tải ảnh thất bại.", "error");
+            showError(err, "Tải ảnh thất bại.");
         } finally {
             setUploading(false);
         }

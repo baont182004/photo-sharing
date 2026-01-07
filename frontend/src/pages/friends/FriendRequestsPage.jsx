@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { api, getUser } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 
 export default function FriendRequestsPage() {
     const me = getUser();
@@ -24,12 +25,12 @@ export default function FriendRequestsPage() {
     const [error, setError] = useState("");
 
     const loadIncoming = async () => {
-        const data = await api.get("/api/friends/requests/incoming?limit=50&skip=0");
+        const data = await api.get(API_PATHS.friends.requestsIncoming(50, 0));
         setIncoming(data.items || []);
     };
 
     const loadOutgoing = async () => {
-        const data = await api.get("/api/friends/requests/outgoing?limit=50&skip=0");
+        const data = await api.get(API_PATHS.friends.requestsOutgoing(50, 0));
         setOutgoing(data.items || []);
     };
 
@@ -98,7 +99,7 @@ export default function FriendRequestsPage() {
                                         onClick={async () => {
                                             try {
                                                 await api.post(
-                                                    `/api/friends/requests/${req._id}/accept`,
+                                                    API_PATHS.friends.requestAccept(req._id),
                                                     {}
                                                 );
                                                 setIncoming((prev) =>
@@ -118,7 +119,7 @@ export default function FriendRequestsPage() {
                                         onClick={async () => {
                                             try {
                                                 await api.post(
-                                                    `/api/friends/requests/${req._id}/decline`,
+                                                    API_PATHS.friends.requestDecline(req._id),
                                                     {}
                                                 );
                                                 setIncoming((prev) =>
@@ -156,7 +157,7 @@ export default function FriendRequestsPage() {
                                     color="warning"
                                     onClick={async () => {
                                         try {
-                                            await api.del(`/api/friends/requests/${req._id}`);
+                                            await api.del(API_PATHS.friends.requestCancel(req._id));
                                             setOutgoing((prev) =>
                                                 prev.filter((r) => r._id !== req._id)
                                             );

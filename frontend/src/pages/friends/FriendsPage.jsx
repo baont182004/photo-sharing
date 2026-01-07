@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Link } from "react-router-dom";
 import { api, getUser } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 
 export default function FriendsPage() {
     const me = getUser();
@@ -28,17 +29,17 @@ export default function FriendsPage() {
     const activeLoading = useMemo(() => loadingByTab[tab], [loadingByTab, tab]);
 
     const loadFriends = async () => {
-        const data = await api.get("/api/friends/list?limit=50&skip=0");
+        const data = await api.get(API_PATHS.friends.list(50, 0));
         setFriends(data.items || []);
     };
 
     const loadIncoming = async () => {
-        const data = await api.get("/api/friends/requests/incoming?limit=50&skip=0");
+        const data = await api.get(API_PATHS.friends.requestsIncoming(50, 0));
         setIncoming(data.items || []);
     };
 
     const loadOutgoing = async () => {
-        const data = await api.get("/api/friends/requests/outgoing?limit=50&skip=0");
+        const data = await api.get(API_PATHS.friends.requestsOutgoing(50, 0));
         setOutgoing(data.items || []);
     };
 
@@ -119,7 +120,7 @@ export default function FriendsPage() {
                                                 variant="outlined"
                                                 onClick={async () => {
                                                     try {
-                                                        await api.del(`/api/friends/${friend._id}`);
+                                                        await api.del(API_PATHS.friends.unfriend(friend._id));
                                                         setFriends((prev) =>
                                                             prev.filter((u) => u._id !== friend._id)
                                                         );
@@ -163,7 +164,7 @@ export default function FriendsPage() {
                                         variant="contained"
                                         onClick={async () => {
                                             try {
-                                                await api.post(`/api/friends/requests/${req._id}/accept`, {});
+                                                await api.post(API_PATHS.friends.requestAccept(req._id), {});
                                                 setIncoming((prev) =>
                                                     prev.filter((r) => r._id !== req._id)
                                                 );
@@ -181,7 +182,7 @@ export default function FriendsPage() {
                                         color="error"
                                         onClick={async () => {
                                             try {
-                                                await api.post(`/api/friends/requests/${req._id}/decline`, {});
+                                                await api.post(API_PATHS.friends.requestDecline(req._id), {});
                                                 setIncoming((prev) =>
                                                     prev.filter((r) => r._id !== req._id)
                                                 );
@@ -225,7 +226,7 @@ export default function FriendsPage() {
                                         color="warning"
                                         onClick={async () => {
                                             try {
-                                                await api.del(`/api/friends/requests/${req._id}`);
+                                            await api.del(API_PATHS.friends.requestCancel(req._id));
                                                 setOutgoing((prev) =>
                                                     prev.filter((r) => r._id !== req._id)
                                                 );

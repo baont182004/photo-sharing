@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 import { Link, useSearchParams } from "react-router-dom";
 import { api, getUser } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 
 function formatDateLocal(date) {
     const yyyy = date.getFullYear();
@@ -168,7 +169,7 @@ export default function AdminDashboard() {
                 params.set("page", String(page));
                 params.set("limit", String(limit));
                 if (debouncedSearch) params.set("search", debouncedSearch);
-                const data = await api.get(`/admin/users?${params.toString()}`);
+                const data = await api.get(API_PATHS.admin.users(params));
                 if (!alive) return;
                 setUsers(data.items || []);
                 setTotal(data.total || 0);
@@ -198,12 +199,12 @@ export default function AdminDashboard() {
                     topFriendsUsers,
                     topActiveUsers,
                 ] = await Promise.all([
-                    api.get(`/api/admin/stats/overview?${qs}`),
-                    api.get(`/api/admin/stats/leaderboards?type=users_photos&${qs}`),
-                    api.get(`/api/admin/stats/leaderboards?type=users_comments&${qs}`),
-                    api.get(`/api/admin/stats/leaderboards?type=users_reactions_received&${qs}`),
-                    api.get(`/api/admin/stats/leaderboards?type=users_friends&${qs}`),
-                    api.get(`/api/admin/stats/leaderboards?type=users_active&${qs}`),
+                    api.get(API_PATHS.admin.statsOverview(qs)),
+                    api.get(API_PATHS.admin.statsLeaderboard("users_photos", qs)),
+                    api.get(API_PATHS.admin.statsLeaderboard("users_comments", qs)),
+                    api.get(API_PATHS.admin.statsLeaderboard("users_reactions_received", qs)),
+                    api.get(API_PATHS.admin.statsLeaderboard("users_friends", qs)),
+                    api.get(API_PATHS.admin.statsLeaderboard("users_active", qs)),
                 ]);
 
                 if (!alive) return;

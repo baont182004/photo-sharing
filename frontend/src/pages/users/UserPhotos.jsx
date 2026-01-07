@@ -10,18 +10,20 @@ import {
     Box,
 } from "@mui/material";
 import { api, getUser, imageUrl } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 import PhotoComments from "../../components/comments/PhotoComments";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { formatDate } from "../../utils/format";
 import ReactionButtons from "../../components/reactions/ReactionButtons";
-import { useToast } from "../../context/ToastContext";
+import useToastErrors from "../../hooks/useToastErrors";
+import usePhotos from "../../hooks/usePhotos";
 
 export default function UserPhotos() {
     const { userId } = useParams();
     const me = getUser();
-    const { showToast } = useToast();
+    const { showError, showSuccess } = useToastErrors();
 
-    const [photos, setPhotos] = useState(null);
+    const { photos, setPhotos, upsert, remove } = usePhotos(null);
     const [draft, setDraft] = useState({});
     const [submitting, setSubmitting] = useState({});
     const [deleting, setDeleting] = useState({});
@@ -39,26 +41,15 @@ export default function UserPhotos() {
     );
 
     const upsertPhoto = useCallback(
-        (photo) =>
-            setPhotos((prev) => {
-                const normalized = normalizePhoto(photo);
-                const list = prev || [];
-                const idx = list.findIndex((p) => p._id === normalized._id);
-                if (idx >= 0) {
-                    const next = [...list];
-                    next[idx] = normalized;
-                    return next;
-                }
-                return [normalized, ...list];
-            }),
-        [normalizePhoto]
+        (photo) => upsert(normalizePhoto(photo)),
+        [normalizePhoto, upsert]
     );
 
     useEffect(() => {
         let alive = true;
 
         (async () => {
-            const data = await api.get(`/photosOfUser/${userId}`);
+            const data = await api.get(API_PATHS.photos.ofUser(userId));
             if (alive) setPhotos(data);
         })();
 
@@ -88,23 +79,22 @@ export default function UserPhotos() {
 
         setSubmitting((p) => ({ ...p, [photoId]: true }));
         try {
-            const updatedPhoto = await api.post(`/commentsOfPhoto/${photoId}`, {
+            const updatedPhoto = await api.post(API_PATHS.comments.ofPhoto(photoId), {
                 comment: text,
             });
 
-            setPhotos((prev) =>
-                (prev || []).map((p) => (p._id === photoId ? updatedPhoto : p))
-            );
+            upsert(normalizePhoto(updatedPhoto));
 
             setDraft((p) => ({ ...p, [photoId]: "" }));
         } catch (e) {
-            showToast(e.message || "Không thể gửi bình luận.", "error");
+            showError(e, "Không thể gửi bình luận.");
         } finally {
             setSubmitting((p) => ({ ...p, [photoId]: false }));
         }
     };
 
-    const updatePhotoInState = (updatedPhoto) => upsertPhoto(updatedPhoto);
+    const updatePhotoInState = (updatedPhoto) =>
+        upsert(normalizePhoto(updatedPhoto));
 
     const canDeletePhoto = (photo) => {
         if (!me) return false;
@@ -124,11 +114,11 @@ export default function UserPhotos() {
     const handleDeletePhoto = async (photoId) => {
         setDeleting((p) => ({ ...p, [photoId]: true }));
         try {
-            await api.del(`/photos/${photoId}`);
-            setPhotos((prev) => (prev || []).filter((p) => p._id !== photoId));
-            showToast("Đã xóa ảnh.", "success");
+            await api.del(API_PATHS.photos.byId(photoId));
+            remove(photoId);
+            showSuccess("Đã xóa ảnh.");
         } catch (e) {
-            showToast(e.message || "Xóa ảnh thất bại.", "error");
+            showError(e, "Xóa ảnh thất bại.");
         } finally {
             setDeleting((p) => ({ ...p, [photoId]: false }));
             setConfirmDeleteId(null);
@@ -157,25 +147,25 @@ export default function UserPhotos() {
         const description = (descDrafts[photoId] || "").trim();
         setSavingDesc((prev) => ({ ...prev, [photoId]: true }));
         try {
-            const updatedPhoto = await api.put(`/photos/${photoId}`, { description });
+            const updatedPhoto = await api.put(API_PATHS.photos.byId(photoId), { description });
             updatePhotoInState(updatedPhoto);
             cancelEditDescription(photoId);
         } catch (e) {
-            showToast(e.message || "Không thể cập nhật mô tả ảnh.", "error");
+            showError(e, "Không thể cập nhật mô tả ảnh.");
         } finally {
             setSavingDesc((prev) => ({ ...prev, [photoId]: false }));
         }
     };
 
     const handleEditComment = async (photoId, commentId, text) => {
-        const updatedPhoto = await api.put(`/commentsOfPhoto/${photoId}/${commentId}`, {
+        const updatedPhoto = await api.put(API_PATHS.comments.byId(photoId, commentId), {
             comment: text,
         });
         updatePhotoInState(updatedPhoto);
     };
 
     const handleDeleteComment = async (photoId, commentId) => {
-        const updatedPhoto = await api.del(`/commentsOfPhoto/${photoId}/${commentId}`);
+        const updatedPhoto = await api.del(API_PATHS.comments.byId(photoId, commentId));
         updatePhotoInState(updatedPhoto);
     };
 

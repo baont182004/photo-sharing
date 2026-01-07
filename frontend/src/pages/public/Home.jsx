@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Box, Button, CardMedia, Paper, Skeleton, Tooltip, Typography } from "@mui/material";
 import { Link } from "react-router-dom";
 import { api, getUser, imageUrl } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 import { formatDate } from "../../utils/format";
 import ReactionButtons from "../../components/reactions/ReactionButtons";
 
@@ -140,7 +141,7 @@ export default function Home() {
                     params.set("cursor", cursorRef.current);
                 }
 
-                const data = await api.get(`/photos/recent?${params.toString()}`);
+                const data = await api.get(API_PATHS.photos.recent(params));
                 const newItems = data?.items || [];
                 setItems((prev) => (mode === "more" ? [...prev, ...newItems] : newItems));
                 setNextCursor(data?.nextCursor || null);

@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { Button, Stack, Typography } from "@mui/material";
 import { api } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 
 function toNumber(value, fallback = 0) {
     const parsed = Number(value);
@@ -84,8 +85,8 @@ export default function ReactionButtons({
         try {
             const path =
                 targetType === "Comment"
-                    ? `/api/comments/${targetId}/reaction`
-                    : `/api/photos/${targetId}/reaction`;
+                    ? API_PATHS.reactions.comment(targetId)
+                    : API_PATHS.reactions.photo(targetId);
             const result = await api.put(path, { value });
             const nextState = {
                 likeCount: toNumber(result.likeCount, prevSnapshot.likeCount),

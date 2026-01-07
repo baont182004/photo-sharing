@@ -10,17 +10,19 @@ import {
     Typography,
 } from "@mui/material";
 import { api, getUser, imageUrl } from "../../config/api";
+import { API_PATHS } from "../../config/apiPaths";
 import PhotoComments from "../../components/comments/PhotoComments";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { formatDate } from "../../utils/format";
 import ReactionButtons from "../../components/reactions/ReactionButtons";
-import { useToast } from "../../context/ToastContext";
+import useToastErrors from "../../hooks/useToastErrors";
+import usePhotos from "../../hooks/usePhotos";
 
 export default function Profile() {
     const authUser = getUser();
-    const { showToast } = useToast();
+    const { showError, showSuccess } = useToastErrors();
     const [detail, setDetail] = useState(null);
-    const [photos, setPhotos] = useState(null);
+    const { photos, setPhotos, upsert, remove } = usePhotos(null);
     const [stats, setStats] = useState(null);
     const [deleting, setDeleting] = useState({});
     const [confirmDeleteId, setConfirmDeleteId] = useState(null);
@@ -37,19 +39,8 @@ export default function Profile() {
     );
 
     const upsertPhoto = useCallback(
-        (photo) =>
-            setPhotos((prev) => {
-                const normalized = normalizePhoto(photo);
-                const list = prev || [];
-                const idx = list.findIndex((p) => p._id === normalized._id);
-                if (idx >= 0) {
-                    const next = [...list];
-                    next[idx] = normalized;
-                    return next;
-                }
-                return [normalized, ...list];
-            }),
-        [normalizePhoto]
+        (photo) => upsert(normalizePhoto(photo)),
+        [normalizePhoto, upsert]
     );
 
     useEffect(() => {
@@ -58,7 +49,7 @@ export default function Profile() {
 
         (async () => {
             try {
-                const u = await api.get(`/user/${authUser._id}`);
+                const u = await api.get(API_PATHS.user.byId(authUser._id));
                 if (alive) setDetail(u);
             } catch {
                 if (alive) setDetail(null);
@@ -76,7 +67,7 @@ export default function Profile() {
 
         (async () => {
             try {
-                const data = await api.get(`/photosOfUser/${authUser._id}`);
+                const data = await api.get(API_PATHS.photos.ofUser(authUser._id));
                 if (alive) setPhotos(data);
             } catch {
                 if (alive) setPhotos([]);
@@ -94,7 +85,7 @@ export default function Profile() {
 
         (async () => {
             try {
-                const data = await api.get("/user/me/stats");
+                const data = await api.get(API_PATHS.user.meStats());
                 if (alive) setStats(data);
             } catch {
                 if (alive) setStats(null);
@@ -132,7 +123,8 @@ export default function Profile() {
         return String(ownerId) === authUser._id;
     };
 
-    const updatePhotoInState = (updatedPhoto) => upsertPhoto(updatedPhoto);
+    const updatePhotoInState = (updatedPhoto) =>
+        upsert(normalizePhoto(updatedPhoto));
 
     const handlePhotoReaction = useCallback((photoId, nextState, prevState) => {
         setPhotos((prev) =>
@@ -178,11 +170,11 @@ export default function Profile() {
     const handleDelete = async (photoId) => {
         setDeleting((p) => ({ ...p, [photoId]: true }));
         try {
-            await api.del(`/photos/${photoId}`);
-            setPhotos((prev) => (prev || []).filter((p) => p._id !== photoId));
-            showToast("Đã xóa ảnh.", "success");
+            await api.del(API_PATHS.photos.byId(photoId));
+            remove(photoId);
+            showSuccess("Đã xóa ảnh.");
         } catch (e) {
-            showToast(e.message || "Xóa ảnh thất bại.", "error");
+            showError(e, "Xóa ảnh thất bại.");
         } finally {
             setDeleting((p) => ({ ...p, [photoId]: false }));
             setConfirmDeleteId(null);
@@ -211,25 +203,25 @@ export default function Profile() {
         const description = (descDrafts[photoId] || "").trim();
         setSavingDesc((prev) => ({ ...prev, [photoId]: true }));
         try {
-            const updatedPhoto = await api.put(`/photos/${photoId}`, { description });
+            const updatedPhoto = await api.put(API_PATHS.photos.byId(photoId), { description });
             updatePhotoInState(updatedPhoto);
             cancelEditDescription(photoId);
         } catch (e) {
-            showToast(e.message || "Không thể cập nhật mô tả ảnh.", "error");
+            showError(e, "Không thể cập nhật mô tả ảnh.");
         } finally {
             setSavingDesc((prev) => ({ ...prev, [photoId]: false }));
         }
     };
 
     const handleEditComment = async (photoId, commentId, text) => {
-        const updatedPhoto = await api.put(`/commentsOfPhoto/${photoId}/${commentId}`, {
+        const updatedPhoto = await api.put(API_PATHS.comments.byId(photoId, commentId), {
             comment: text,
         });
         updatePhotoInState(updatedPhoto);
     };
 
     const handleDeleteComment = async (photoId, commentId) => {
-        const updatedPhoto = await api.del(`/commentsOfPhoto/${photoId}/${commentId}`);
+        const updatedPhoto = await api.del(API_PATHS.comments.byId(photoId, commentId));
         updatePhotoInState(updatedPhoto);
     };
 
