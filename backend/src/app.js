@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import path from 'path';
 
 import adminRoutes from './routes/adminRoutes.js';
 import adminStatsRoutes from './routes/adminStatsRoutes.js';
@@ -14,13 +13,21 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.use('/images', express.static(path.join(process.cwd(), 'images')));
-
 app.use('/admin', adminRoutes);
 app.use('/api/admin/stats', verifyAdmin, adminStatsRoutes);
 app.use('/user', userRoutes);
 app.use('/', photoRoutes);
 app.use('/api/friends', friendRoutes);
 app.use('/api', reactionRoutes);
+
+app.use((err, req, res, next) => {
+    if (err?.name === 'MulterError') {
+        return res.status(400).json({ error: err.message });
+    }
+    if (err?.message?.includes('image files')) {
+        return res.status(400).json({ error: err.message });
+    }
+    return next(err);
+});
 
 export default app;

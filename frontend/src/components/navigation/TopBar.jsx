@@ -15,6 +15,7 @@ import {
 import { Link, useMatch, useNavigate } from "react-router-dom";
 import { api, getUser, getToken, uploadPhoto } from "../../config/api";
 import { useThemeMode } from "../../context/ThemeModeContext";
+import { useToast } from "../../context/ToastContext";
 
 export default function TopBar() {
     const yourName = "Nguyễn Thái Bảo - PTIT";
@@ -30,6 +31,7 @@ export default function TopBar() {
     const navigate = useNavigate();
     const fileRef = useRef(null);
     const { mode, toggleMode } = useThemeMode();
+    const { showToast } = useToast();
     const [uploading, setUploading] = useState(false);
     const [openUpload, setOpenUpload] = useState(false);
     const [selectedFile, setSelectedFile] = useState(null);
@@ -111,7 +113,7 @@ export default function TopBar() {
             if (u?._id) navigate(`/photos/${u._id}`);
             handleClose();
         } catch (err) {
-            alert(err.message || "Tải ảnh thất bại.");
+            showToast(err.message || "Tải ảnh thất bại.", "error");
         } finally {
             setUploading(false);
         }

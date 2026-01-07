@@ -1,13 +1,14 @@
-import fs from 'fs';
-import path from 'path';
 import mongoose from 'mongoose';
+import { fileTypeFromBuffer } from 'file-type';
 import Photo from '../models/Photo.js';
 import Reaction from '../models/Reaction.js';
+import { deleteImageByPublicId, uploadImageBuffer } from '../config/cloudinary.js';
+import { ALLOWED_MIME_TYPES } from '../config/uploads.js';
 
-const imagesDir = path.join(process.cwd(), 'images');
 const COMMENT_FIELDS = '_id first_name last_name login_name';
 const FEED_DEFAULT_LIMIT = 12;
 const FEED_MAX_LIMIT = 30;
+const OPTIMIZED_TRANSFORM = 'f_auto,q_auto,w_1080';
 
 const isValidObjectId = (value) => mongoose.Types.ObjectId.isValid(value);
 
@@ -30,11 +31,22 @@ function parseCursor(rawCursor) {
     return { date, id: new mongoose.Types.ObjectId(rawId) };
 }
 
+function buildOptimizedUrl(url) {
+    if (!url) return '';
+    const marker = '/upload/';
+    const idx = url.indexOf(marker);
+    if (idx === -1) return url;
+    const prefix = url.slice(0, idx + marker.length);
+    const suffix = url.slice(idx + marker.length);
+    return `${prefix}${OPTIMIZED_TRANSFORM}/${suffix}`;
+}
+
 function shapePhoto(doc, photoReactions = new Map(), commentReactions = new Map()) {
     if (!doc) return null;
     const p = doc.toObject ? doc.toObject() : doc;
     return {
         ...p,
+        imageUrlOptimized: p.imageUrl ? buildOptimizedUrl(p.imageUrl) : undefined,
         likeCount: p.likeCount || 0,
         dislikeCount: p.dislikeCount || 0,
         myReaction: photoReactions.get(String(p._id)) || 0,
@@ -84,6 +96,20 @@ async function fetchPhotoWithComments(photoId) {
         .lean();
 }
 
+async function validateImageBuffer(file) {
+    if (!file?.buffer) {
+        return { ok: false, error: 'No file uploaded' };
+    }
+    if (file.mimetype && !ALLOWED_MIME_TYPES.has(file.mimetype)) {
+        return { ok: false, error: 'Only image files are allowed' };
+    }
+    const detected = await fileTypeFromBuffer(file.buffer);
+    if (!detected || !ALLOWED_MIME_TYPES.has(detected.mime)) {
+        return { ok: false, error: 'Unsupported image type' };
+    }
+    return { ok: true };
+}
+
 // GET /photosOfUser/:id
 export async function getPhotosOfUser(req, res) {
     try {
@@ -122,7 +148,9 @@ export async function getRecentPhotos(req, res) {
         const photos = await Photo.find(query)
             .sort({ date_time: -1, _id: -1 })
             .limit(limit + 1)
-            .select('file_name description date_time user_id likeCount dislikeCount')
+            .select(
+                'imageUrl publicId width height format bytes description date_time user_id likeCount dislikeCount'
+            )
             .populate('user_id', '_id first_name last_name')
             .lean();
 
@@ -183,8 +211,9 @@ export async function addComment(req, res) {
 // Post /photos/new
 export async function uploadNewPhoto(req, res) {
     try {
-        if (!req.file) {
-            return res.status(400).send('No file uploaded');
+        const validation = await validateImageBuffer(req.file);
+        if (!validation.ok) {
+            return res.status(400).json({ error: validation.error });
         }
         const userId = req.user?._id;
         if (!userId) return res.sendStatus(401);
@@ -196,15 +225,24 @@ export async function uploadNewPhoto(req, res) {
             return res.status(400).json({ error: 'Description too long' });
         }
 
+        const uploaded = await uploadImageBuffer(req.file.buffer, {
+            public_id: undefined,
+        });
+
         const photo = await Photo.create({
-            file_name: req.file.filename,
+            imageUrl: uploaded.secure_url,
+            publicId: uploaded.public_id,
+            width: uploaded.width,
+            height: uploaded.height,
+            format: uploaded.format,
+            bytes: uploaded.bytes,
             date_time: new Date(),
             user_id: userId,
             description,
             comments: [],
         });
 
-        return res.status(201).json(photo);
+        return res.status(201).json(shapePhoto(photo));
     } catch (err) {
         console.error('uploadNewPhoto error:', err);
         return res.status(500).send('Server error');
@@ -226,11 +264,11 @@ export async function deletePhoto(req, res) {
             return res.status(403).json({ error: 'Not allowed to delete this photo' });
         }
 
+        const oldPublicId = photo.publicId;
         await Photo.deleteOne({ _id: photoId });
 
-        if (photo.file_name) {
-            const filePath = path.join(imagesDir, photo.file_name);
-            fs.promises.unlink(filePath).catch(() => { });
+        if (oldPublicId) {
+            await deleteImageByPublicId(oldPublicId);
         }
 
         return res.status(200).json({ success: true });
@@ -272,6 +310,51 @@ export async function updatePhotoDescription(req, res) {
         return res.status(200).json(shaped[0] || null);
     } catch (err) {
         console.error('updatePhotoDescription error:', err);
+        return res.status(500).send('Server error');
+    }
+}
+
+// PUT /photos/:id/image
+export async function replacePhotoImage(req, res) {
+    try {
+        const photoId = req.params.id;
+        if (!isValidObjectId(photoId)) {
+            return res.status(400).json({ error: 'Invalid photo id' });
+        }
+        const validation = await validateImageBuffer(req.file);
+        if (!validation.ok) {
+            return res.status(400).json({ error: validation.error });
+        }
+
+        const photo = await Photo.findById(photoId);
+        if (!photo) return res.status(404).json({ error: 'Photo not found' });
+
+        if (!isOwnerOrAdmin(photo.user_id, req.user)) {
+            return res.status(403).json({ error: 'Not allowed to edit this photo' });
+        }
+
+        const oldPublicId = photo.publicId;
+        const uploaded = await uploadImageBuffer(req.file.buffer, {
+            public_id: undefined,
+        });
+
+        photo.imageUrl = uploaded.secure_url;
+        photo.publicId = uploaded.public_id;
+        photo.width = uploaded.width;
+        photo.height = uploaded.height;
+        photo.format = uploaded.format;
+        photo.bytes = uploaded.bytes;
+        await photo.save();
+
+        if (oldPublicId) {
+            await deleteImageByPublicId(oldPublicId);
+        }
+
+        const updated = await fetchPhotoWithComments(photoId);
+        const shaped = await attachReactions(updated ? [updated] : [], req.user?._id);
+        return res.status(200).json(shaped[0] || null);
+    } catch (err) {
+        console.error('replacePhotoImage error:', err);
         return res.status(500).send('Server error');
     }
 }

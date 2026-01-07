@@ -18,7 +18,12 @@ const commentSchema = new mongoose.Schema(
 
 const photoSchema = new mongoose.Schema(
   {
-    file_name: { type: String, required: true },
+    imageUrl: { type: String },
+    publicId: { type: String, index: true },
+    width: { type: Number },
+    height: { type: Number },
+    format: { type: String },
+    bytes: { type: Number },
     date_time: { type: Date, default: Date.now },
 
     user_id: {

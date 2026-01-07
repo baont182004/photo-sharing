@@ -79,8 +79,10 @@ function PostCard({ photo }) {
 
             <CardMedia
                 component="img"
-                image={imageUrl(photo.file_name)}
+                image={imageUrl(photo.imageUrlOptimized || photo.imageUrl)}
                 alt={caption}
+                loading="lazy"
+                decoding="async"
                 sx={{
                     width: "100%",
                     height: { xs: 260, sm: 360, md: 420 },

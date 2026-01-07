@@ -14,9 +14,11 @@ import PhotoComments from "../../components/comments/PhotoComments";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
 import { formatDate } from "../../utils/format";
 import ReactionButtons from "../../components/reactions/ReactionButtons";
+import { useToast } from "../../context/ToastContext";
 
 export default function Profile() {
     const authUser = getUser();
+    const { showToast } = useToast();
     const [detail, setDetail] = useState(null);
     const [photos, setPhotos] = useState(null);
     const [stats, setStats] = useState(null);
@@ -178,9 +180,9 @@ export default function Profile() {
         try {
             await api.del(`/photos/${photoId}`);
             setPhotos((prev) => (prev || []).filter((p) => p._id !== photoId));
-            alert("Đã xóa ảnh.");
+            showToast("Đã xóa ảnh.", "success");
         } catch (e) {
-            alert(e.message || "Xóa ảnh thất bại.");
+            showToast(e.message || "Xóa ảnh thất bại.", "error");
         } finally {
             setDeleting((p) => ({ ...p, [photoId]: false }));
             setConfirmDeleteId(null);
@@ -213,7 +215,7 @@ export default function Profile() {
             updatePhotoInState(updatedPhoto);
             cancelEditDescription(photoId);
         } catch (e) {
-            alert(e.message || "Không thể cập nhật mô tả ảnh.");
+            showToast(e.message || "Không thể cập nhật mô tả ảnh.", "error");
         } finally {
             setSavingDesc((prev) => ({ ...prev, [photoId]: false }));
         }
@@ -360,8 +362,10 @@ export default function Profile() {
 
                         <CardMedia
                             component="img"
-                            image={imageUrl(photo.file_name)}
-                            alt={photo.file_name}
+                            image={imageUrl(photo.imageUrlOptimized || photo.imageUrl)}
+                            alt={photo.publicId || "photo"}
+                            loading="lazy"
+                            decoding="async"
                             sx={{
                                 width: "100%",
                                 height: { xs: 260, sm: 340, md: 420 },

@@ -96,8 +96,10 @@ export default function UserComments() {
                             <Link to={`/photos/${comment.photo.user_id}`} style={{ display: "block" }}>
                                 <CardMedia
                                     component="img"
-                                    image={imageUrl(comment.photo.file_name)}
-                                    alt={comment.photo.file_name}
+                                    image={imageUrl(comment.photo.imageUrlOptimized || comment.photo.imageUrl)}
+                                    alt={comment.photo.publicId || "photo"}
+                                    loading="lazy"
+                                    decoding="async"
                                     sx={{ width: 180, height: 120, objectFit: "cover" }}
                                 />
                             </Link>

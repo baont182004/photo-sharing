@@ -74,15 +74,16 @@ export const api = {
 };
 
 // ===== Utils =====
-export function imageUrl(fileName) {
-    return `${API_URL}/images/${fileName}`;
+export function imageUrl(value) {
+    return value || '';
 }
 
 // ===== Uploads =====
-export async function uploadPhoto(file) {
+export async function uploadPhoto(file, description = '') {
     const token = getToken();
     const form = new FormData();
     form.append('uploadedphoto', file);
+    if (description) form.append('description', description);
 
     const res = await fetch(`${API_URL}/photos/new`, {
         method: 'POST',

@@ -141,8 +141,10 @@ export default function UserDetail() {
                                 }}
                             >
                                 <img
-                                    src={imageUrl(photo.file_name)}
-                                    alt={photo.file_name}
+                                    src={imageUrl(photo.imageUrlOptimized || photo.imageUrl)}
+                                    alt={photo.publicId || "photo"}
+                                    loading="lazy"
+                                    decoding="async"
                                     style={{
                                         width: "100%",
                                         height: "100%",

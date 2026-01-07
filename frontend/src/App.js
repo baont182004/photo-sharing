@@ -3,6 +3,7 @@ import { BrowserRouter } from "react-router-dom";
 import { CssBaseline, ThemeProvider, createTheme, useMediaQuery } from "@mui/material";
 import AppRoutes from "./routes/AppRoutes";
 import { ThemeModeContext } from "./context/ThemeModeContext";
+import { ToastProvider } from "./context/ToastContext";
 
 export default function App() {
   const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
@@ -85,9 +86,11 @@ export default function App() {
     <ThemeModeContext.Provider value={{ mode, toggleMode }}>
       <ThemeProvider theme={theme}>
         <CssBaseline />
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ToastProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ToastProvider>
       </ThemeProvider>
     </ThemeModeContext.Provider>
   );

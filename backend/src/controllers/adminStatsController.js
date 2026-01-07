@@ -357,7 +357,8 @@ export async function getLeaderboards(req, res) {
                         _id: 0,
                         photo: {
                             _id: "$photo._id",
-                            file_name: "$photo.file_name",
+                            imageUrl: "$photo.imageUrl",
+                            publicId: "$photo.publicId",
                         },
                         user: {
                             _id: "$user._id",
@@ -378,7 +379,8 @@ export async function getLeaderboards(req, res) {
             const rows = await Photo.aggregate([
                 {
                     $project: {
-                        file_name: 1,
+                        imageUrl: 1,
+                        publicId: 1,
                         user_id: 1,
                         commentCount: { $size: { $ifNull: ["$comments", []] } },
                     },
@@ -397,7 +399,7 @@ export async function getLeaderboards(req, res) {
                 {
                     $project: {
                         _id: 0,
-                        photo: { _id: "$_id", file_name: "$file_name" },
+                        photo: { _id: "$_id", imageUrl: "$imageUrl", publicId: "$publicId" },
                         user: {
                             _id: "$user._id",
                             first_name: "$user.first_name",

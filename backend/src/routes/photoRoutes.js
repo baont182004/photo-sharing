@@ -1,10 +1,8 @@
 import express from 'express';
-import path from 'path';
-import fs from 'fs';
 import multer from 'multer';
-import crypto from 'crypto';
 
 import { verifyToken } from '../middleware/verifyToken.js';
+import { ALLOWED_MIME_TYPES, MAX_IMAGE_SIZE_BYTES } from '../config/uploads.js';
 import {
     uploadNewPhoto,
     getPhotosOfUser,
@@ -12,6 +10,7 @@ import {
     addComment,
     deletePhoto,
     updatePhotoDescription,
+    replacePhotoImage,
     updateComment,
     deleteComment,
 } from '../controllers/photoController.js';
@@ -19,22 +18,11 @@ import {
 
 const router = express.Router();
 
-const imagesDir = path.join(process.cwd(), 'images');
-fs.mkdirSync(imagesDir, { recursive: true });
-
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, imagesDir),
-    filename: (req, file, cb) => {
-        const ext = path.extname(file.originalname) || '.jpg';
-        const name = `${Date.now()}-${crypto.randomBytes(8).toString('hex')}${ext}`;
-        cb(null, name);
-    },
-});
-
 const upload = multer({
-    storage,
+    storage: multer.memoryStorage(),
+    limits: { fileSize: MAX_IMAGE_SIZE_BYTES },
     fileFilter: (req, file, cb) => {
-        if (file.mimetype?.startsWith('image/')) cb(null, true);
+        if (ALLOWED_MIME_TYPES.has(file.mimetype)) cb(null, true);
         else cb(new Error('Only image files are allowed'));
     },
 });
@@ -47,6 +35,7 @@ router.post('/commentsOfPhoto/:photo_id', addComment);
 router.put('/commentsOfPhoto/:photo_id/:comment_id', updateComment);
 router.delete('/commentsOfPhoto/:photo_id/:comment_id', deleteComment);
 router.put('/photos/:id', updatePhotoDescription);
+router.put('/photos/:id/image', upload.single('uploadedphoto'), replacePhotoImage);
 router.delete('/photos/:id', deletePhoto);
 
 export default router;
