@@ -4,6 +4,8 @@ const commentSchema = new mongoose.Schema(
   {
     comment: { type: String, required: true, trim: true },
     date_time: { type: Date, default: Date.now },
+    likeCount: { type: Number, default: 0, min: 0 },
+    dislikeCount: { type: Number, default: 0, min: 0 },
 
     user_id: {
       type: mongoose.Schema.Types.ObjectId,
@@ -26,6 +28,8 @@ const photoSchema = new mongoose.Schema(
       index: true,
     },
 
+    likeCount: { type: Number, default: 0, min: 0 },
+    dislikeCount: { type: Number, default: 0, min: 0 },
     comments: { type: [commentSchema], default: [] },
   },
   { timestamps: true }

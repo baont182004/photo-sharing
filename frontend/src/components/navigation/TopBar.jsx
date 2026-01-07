@@ -1,12 +1,24 @@
 // src/components/navigation/TopBar.jsx
 import React, { useEffect, useRef, useState } from "react";
-import { AppBar, Toolbar, Typography, Button, Box } from "@mui/material";
+import {
+    AppBar,
+    Toolbar,
+    Typography,
+    Button,
+    Box,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    DialogTitle,
+    TextField,
+} from "@mui/material";
 import { Link, useMatch, useNavigate } from "react-router-dom";
 import { api, getUser, getToken, uploadPhoto } from "../../config/api";
+import { useThemeMode } from "../../context/ThemeModeContext";
 
 export default function TopBar() {
-    const yourName = "Nguyễn Thái Bảo - B22DCAT032";
-    const [contextText, setContextText] = useState("Photo Sharing App");
+    const yourName = "Nguyễn Thái Bảo - PTIT";
+    const [contextText, setContextText] = useState("Ứng dụng chia sẻ ảnh");
 
     const [me, setMe] = useState(getUser());
     useEffect(() => {
@@ -17,7 +29,12 @@ export default function TopBar() {
 
     const navigate = useNavigate();
     const fileRef = useRef(null);
+    const { mode, toggleMode } = useThemeMode();
     const [uploading, setUploading] = useState(false);
+    const [openUpload, setOpenUpload] = useState(false);
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [previewUrl, setPreviewUrl] = useState("");
+    const [description, setDescription] = useState("");
 
     const photoMatch = useMatch("/photos/:userId");
     const userMatch = useMatch("/users/:userId");
@@ -27,12 +44,12 @@ export default function TopBar() {
 
         const matchedUserId = photoMatch?.params.userId || userMatch?.params.userId;
         if (!matchedUserId) {
-            setContextText("Photo Sharing App");
+            setContextText("Ứng dụng chia sẻ ảnh");
             return;
         }
 
         if (!getToken()) {
-            setContextText("Photo Sharing App");
+            setContextText("Ứng dụng chia sẻ ảnh");
             return;
         }
 
@@ -43,9 +60,9 @@ export default function TopBar() {
 
                 if (photoMatch) setContextText(`Ảnh của ${user.first_name} ${user.last_name}`);
                 else if (userMatch) setContextText(`Chi tiết của ${user.first_name} ${user.last_name}`);
-                else setContextText("Photo Sharing App");
+                else setContextText("Ứng dụng chia sẻ ảnh");
             } catch {
-                if (alive) setContextText("Photo Sharing App");
+                if (alive) setContextText("Ứng dụng chia sẻ ảnh");
             }
         })();
 
@@ -56,21 +73,45 @@ export default function TopBar() {
 
     const pickFile = () => fileRef.current?.click();
 
-    const onFileChange = async (e) => {
+    const resetUpload = () => {
+        setSelectedFile(null);
+        setDescription("");
+        setPreviewUrl("");
+    };
+
+    const onFileChange = (e) => {
         const file = e.target.files?.[0];
         e.target.value = "";
         if (!file) return;
 
+        setSelectedFile(file);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        const nextUrl = URL.createObjectURL(file);
+        setPreviewUrl(nextUrl);
+        setOpenUpload(true);
+    };
+
+    const handleClose = () => {
+        setOpenUpload(false);
+        if (previewUrl) URL.revokeObjectURL(previewUrl);
+        resetUpload();
+    };
+
+    const handleSubmit = async () => {
+        if (!selectedFile) return;
+        if (description.length > 200) return;
+
         setUploading(true);
         try {
-            const uploaded = await uploadPhoto(file);
+            const uploaded = await uploadPhoto(selectedFile, description.trim());
             if (uploaded) {
                 window.dispatchEvent(new CustomEvent("photouploaded", { detail: uploaded }));
             }
             const u = getUser();
             if (u?._id) navigate(`/photos/${u._id}`);
+            handleClose();
         } catch (err) {
-            alert(err.message);
+            alert(err.message || "Tải ảnh thất bại.");
         } finally {
             setUploading(false);
         }
@@ -101,14 +142,71 @@ export default function TopBar() {
                             accept="image/*"
                             style={{ display: "none" }}
                             onChange={onFileChange}
+                            aria-label="Chọn ảnh để tải lên"
                         />
 
                         <Button color="inherit" variant="outlined" onClick={pickFile} disabled={uploading}>
                             {uploading ? "Đang tải lên..." : "Thêm ảnh"}
                         </Button>
+                        <Button
+                            color="inherit"
+                            variant="outlined"
+                            onClick={toggleMode}
+                            aria-pressed={mode === "dark"}
+                        >
+                            {mode === "dark" ? "Giao diện sáng" : "Giao diện tối"}
+                        </Button>
                     </Box>
                 )}
             </Toolbar>
+
+            <Dialog
+                open={openUpload}
+                onClose={handleClose}
+                maxWidth="sm"
+                fullWidth
+                aria-labelledby="upload-dialog-title"
+                aria-describedby="upload-dialog-desc"
+            >
+                <DialogTitle id="upload-dialog-title">Thêm ảnh</DialogTitle>
+                <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                    <Typography id="upload-dialog-desc" variant="body2" color="text.secondary">
+                        Chọn một ảnh, thêm mô tả và nhấn “Đăng” để chia sẻ.
+                    </Typography>
+                    <TextField
+                        label="Mô tả (tối đa 200 ký tự)"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        inputProps={{ maxLength: 200 }}
+                        multiline
+                        minRows={2}
+                    />
+                    {previewUrl && (
+                        <Box
+                            sx={{
+                                width: "100%",
+                                borderRadius: 1,
+                                overflow: "hidden",
+                                bgcolor: "grey.100",
+                            }}
+                        >
+                            <img
+                                src={previewUrl}
+                                alt="Xem trước ảnh"
+                                style={{ width: "100%", height: "auto", display: "block" }}
+                            />
+                        </Box>
+                    )}
+                </DialogContent>
+                <DialogActions>
+                    <Button onClick={handleClose} disabled={uploading}>
+                        Hủy
+                    </Button>
+                    <Button variant="contained" onClick={handleSubmit} disabled={uploading || !selectedFile}>
+                        Đăng
+                    </Button>
+                </DialogActions>
+            </Dialog>
         </AppBar>
     );
 }

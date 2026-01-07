@@ -25,7 +25,7 @@ export default function AppLayout() {
         } catch {
         } finally {
             clearAuth();
-            navigate("/login");
+            navigate("/loginregister");
         }
     };
 
@@ -41,7 +41,8 @@ export default function AppLayout() {
                     gap: 1,
                     alignItems: "center",
                     flexWrap: "wrap",
-                    borderBottom: "1px solid rgba(255,255,255,0.1)",
+                    borderBottom: 1,
+                    borderColor: "divider",
                 }}
             >
                 <Button component={Link} to="/" variant="text">
@@ -51,6 +52,12 @@ export default function AppLayout() {
                 {user && (
                     <Button component={Link} to="/users" variant="text">
                         Người dùng
+                    </Button>
+                )}
+
+                {user && (
+                    <Button component={Link} to="/friends" variant="text">
+                        Bạn bè
                     </Button>
                 )}
 

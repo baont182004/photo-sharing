@@ -16,6 +16,7 @@ import UserList from "../pages/users/UserList";
 import UserDetail from "../pages/users/UserDetail";
 import UserPhotos from "../pages/users/UserPhotos";
 import UserComments from "../pages/users/UserComments";
+import FriendsPage from "../pages/friends/FriendsPage";
 
 import ProtectedRoute from "../components/routes/ProtectedRoute";
 import AdminProtectedRoute from "../components/routes/AdminProtectedRoute";
@@ -33,6 +34,7 @@ export default function AppRoutes() {
                     <Route path="/users/:userId" element={<UserDetail />} />
                     <Route path="/photos/:userId" element={<UserPhotos />} />
                     <Route path="/comments/:userId" element={<UserComments />} />
+                    <Route path="/friends" element={<FriendsPage />} />
 
                     <Route path="/profile" element={<Profile />} />
                 </Route>

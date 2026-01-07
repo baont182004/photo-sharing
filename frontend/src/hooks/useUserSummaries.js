@@ -34,7 +34,7 @@ export default function useUserSummaries(searchTerm = "") {
                 }
             } catch (err) {
                 if (!alive) return;
-                setError(err?.message || "Failed to load users");
+                setError(err?.message || "Không thể tải người dùng.");
                 setUsers([]);
                 setAllPhotos([]);
             } finally {

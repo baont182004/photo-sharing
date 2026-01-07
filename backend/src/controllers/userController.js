@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
 import User from '../models/User.js';
+import Photo from '../models/Photo.js';
+import Friendship from '../models/Friendship.js';
 
 const USER_PUBLIC_FIELDS = '_id first_name last_name';
 const USER_DETAIL_FIELDS =
@@ -30,6 +32,46 @@ export async function getUserById(req, res) {
         return res.status(200).json(user);
     } catch (error) {
         console.error('Error fetching user by ID:', error);
+        return res.status(500).json({ error: error.message });
+    }
+}
+
+// GET /user/me/stats
+export async function getMyStats(req, res) {
+    try {
+        const userId = req.user?._id;
+        if (!mongoose.Types.ObjectId.isValid(userId)) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const [photoAgg, friendCount] = await Promise.all([
+            Photo.aggregate([
+                { $match: { user_id: new mongoose.Types.ObjectId(userId) } },
+                {
+                    $group: {
+                        _id: '$user_id',
+                        photoCount: { $sum: 1 },
+                        totalLikes: { $sum: '$likeCount' },
+                        totalDislikes: { $sum: '$dislikeCount' },
+                    },
+                },
+            ]),
+            Friendship.countDocuments({ users: userId }),
+        ]);
+
+        const stats = photoAgg[0] || {};
+        const totalLikes = stats.totalLikes || 0;
+        const totalDislikes = stats.totalDislikes || 0;
+
+        return res.status(200).json({
+            photoCount: stats.photoCount || 0,
+            friendCount: friendCount || 0,
+            totalLikes,
+            totalDislikes,
+            totalReactions: totalLikes + totalDislikes,
+        });
+    } catch (error) {
+        console.error('Error fetching my stats:', error);
         return res.status(500).json({ error: error.message });
     }
 }

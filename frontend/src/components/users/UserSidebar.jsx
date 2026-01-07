@@ -19,7 +19,11 @@ export default function UserSidebar() {
     const matchPhoto = useMatch("/photos/:userId");
     const matchComment = useMatch("/comments/:userId");
 
-    const selectedId = matchUser?.params.userId || matchPhoto?.params.userId || matchComment?.params.userId || "";
+    const selectedId =
+        matchUser?.params.userId ||
+        matchPhoto?.params.userId ||
+        matchComment?.params.userId ||
+        "";
 
     const filtered = useMemo(() => {
         const term = search.trim().toLowerCase();
@@ -29,6 +33,16 @@ export default function UserSidebar() {
             (u.occupation || "").toLowerCase().includes(term)
         );
     }, [search, users]);
+
+    const handlePhotoClick = (e, userId) => {
+        e.stopPropagation();
+        navigate(`/photos/${userId}`);
+    };
+
+    const handleCommentClick = (e, userId) => {
+        e.stopPropagation();
+        navigate(`/comments/${userId}`);
+    };
 
     return (
         <Paper
@@ -76,7 +90,13 @@ export default function UserSidebar() {
                                     primaryTypographyProps={{ noWrap: true }}
                                     secondaryTypographyProps={{ noWrap: true }}
                                 />
-                                <Box sx={{ display: "flex", gap: 0.5, alignItems: "center" }}>
+                                <Box
+                                    sx={{
+                                        display: "flex",
+                                        gap: 0.5,
+                                        alignItems: "center",
+                                    }}
+                                >
                                     <Box
                                         sx={{
                                             px: 1,
@@ -87,8 +107,17 @@ export default function UserSidebar() {
                                             fontSize: 11,
                                             minWidth: 24,
                                             textAlign: "center",
+                                            cursor: "pointer",
                                         }}
                                         title="Số ảnh"
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => handlePhotoClick(e, u._id)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                handlePhotoClick(e, u._id);
+                                            }
+                                        }}
                                     >
                                         {photoCount}
                                     </Box>
@@ -102,8 +131,17 @@ export default function UserSidebar() {
                                             fontSize: 11,
                                             minWidth: 24,
                                             textAlign: "center",
+                                            cursor: "pointer",
                                         }}
                                         title="Số bình luận"
+                                        role="button"
+                                        tabIndex={0}
+                                        onClick={(e) => handleCommentClick(e, u._id)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" || e.key === " ") {
+                                                handleCommentClick(e, u._id);
+                                            }
+                                        }}
                                     >
                                         {commentCount}
                                     </Box>
@@ -114,7 +152,7 @@ export default function UserSidebar() {
                     {filtered.length === 0 && (
                         <Box sx={{ py: 1 }}>
                             <Typography variant="body2" color="text.secondary">
-                                Không có kết quả
+                                Không có kết quả.
                             </Typography>
                         </Box>
                     )}

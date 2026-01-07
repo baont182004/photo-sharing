@@ -4,6 +4,7 @@ import {
     register,
     getUserList,
     getUserById,
+    getMyStats,
     searchUsersByName,
 } from '../controllers/userController.js';
 
@@ -15,6 +16,7 @@ router.use(verifyToken);
 
 router.get('/list', getUserList);
 router.get('/search', searchUsersByName);
+router.get('/me/stats', getMyStats);
 router.get('/:id', getUserById);
 
 export default router;

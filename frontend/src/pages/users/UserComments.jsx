@@ -62,7 +62,7 @@ export default function UserComments() {
                 setUserComments(collectUserComments(photos));
             } catch (err) {
                 if (!alive) return;
-                setError(err?.message || "Failed to load comments");
+                setError(err?.message || "Không thể tải bình luận.");
                 setUser(null);
                 setUserComments([]);
             } finally {

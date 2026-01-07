@@ -9,6 +9,7 @@ import {
     ListItemText,
     Divider,
     Box,
+    TextField,
 } from "@mui/material";
 import useUserSummaries from "../../hooks/useUserSummaries";
 
@@ -17,12 +18,13 @@ export default function UserList() {
     const [debouncedSearchTerm, setDebouncedSearchTerm] = useState(searchTerm);
     const navigate = useNavigate();
 
-    const { users, loading, getPhotoCount, getCommentCount } = useUserSummaries(debouncedSearchTerm);
+    const { users, loading, getPhotoCount, getCommentCount } =
+        useUserSummaries(debouncedSearchTerm);
 
     useEffect(() => {
         const timeId = setTimeout(() => {
             setDebouncedSearchTerm(searchTerm);
-        }, 1000);
+        }, 600);
         return () => clearTimeout(timeId);
     }, [searchTerm]);
 
@@ -32,28 +34,25 @@ export default function UserList() {
         navigate(`/comments/${userId}`);
     };
 
-    if (loading || !users) return <div>Loading...</div>;
+    if (loading || !users) return <div>Đang tải danh sách...</div>;
 
     return (
         <Paper sx={{ p: 2 }}>
             <Typography variant="h5" gutterBottom>
-                Danh sách người dùng
+                Khám phá người dùng
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                Gõ tên để tìm nhanh. Bấm vào người dùng để xem hồ sơ và gửi kết bạn.
             </Typography>
 
-            <div>
-                <input
-                    type="text"
-                    placeholder="Tìm kiếm theo tên..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        width: "100%",
-                        padding: "8px",
-                        marginBottom: "16px",
-                        boxSizing: "border-box",
-                    }}
-                />
-            </div>
+            <TextField
+                fullWidth
+                size="small"
+                placeholder="Nhập tên hoặc họ..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                sx={{ mb: 2 }}
+            />
 
             <List>
                 {users.map((user) => {
@@ -79,7 +78,7 @@ export default function UserList() {
                                             minWidth: 28,
                                             textAlign: "center",
                                         }}
-                                        title="Photo count"
+                                        title="Số ảnh đã đăng"
                                     >
                                         {photoCount}
                                     </Box>
@@ -96,7 +95,7 @@ export default function UserList() {
                                             textAlign: "center",
                                             cursor: "pointer",
                                         }}
-                                        title="Comment count (click)"
+                                        title="Số bình luận (nhấn để xem)"
                                         onClick={(e) => handleCommentBubbleClick(e, user._id)}
                                     >
                                         {commentCount}
@@ -107,6 +106,13 @@ export default function UserList() {
                         </React.Fragment>
                     );
                 })}
+                {users.length === 0 && (
+                    <Box sx={{ py: 2 }}>
+                        <Typography variant="body2" color="text.secondary">
+                            Không tìm thấy người dùng phù hợp. Hãy thử từ khóa khác.
+                        </Typography>
+                    </Box>
+                )}
             </List>
         </Paper>
     );

@@ -8,8 +8,10 @@ import { verifyToken } from '../middleware/verifyToken.js';
 import {
     uploadNewPhoto,
     getPhotosOfUser,
+    getRecentPhotos,
     addComment,
     deletePhoto,
+    updatePhotoDescription,
     updateComment,
     deleteComment,
 } from '../controllers/photoController.js';
@@ -40,9 +42,11 @@ const upload = multer({
 router.use(verifyToken);
 router.post('/photos/new', upload.single('uploadedphoto'), uploadNewPhoto);
 router.get('/photosOfUser/:id', getPhotosOfUser);
+router.get('/photos/recent', getRecentPhotos);
 router.post('/commentsOfPhoto/:photo_id', addComment);
 router.put('/commentsOfPhoto/:photo_id/:comment_id', updateComment);
 router.delete('/commentsOfPhoto/:photo_id/:comment_id', deleteComment);
+router.put('/photos/:id', updatePhotoDescription);
 router.delete('/photos/:id', deletePhoto);
 
 export default router;

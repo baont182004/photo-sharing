@@ -18,12 +18,10 @@ export default function LoginRegister() {
     const nav = useNavigate();
     const loc = useLocation();
 
-    // Login state
     const [loginForm, setLoginForm] = useState({ login_name: "", password: "" });
     const [loginErr, setLoginErr] = useState("");
     const [loginLoading, setLoginLoading] = useState(false);
 
-    // Register state
     const [reg, setReg] = useState(emptyRegister);
     const [regPassword2, setRegPassword2] = useState("");
     const [regErr, setRegErr] = useState("");
@@ -68,7 +66,7 @@ export default function LoginRegister() {
         setRegOk("");
 
         if (!passwordsMatch) {
-            setRegErr("Mật khẩu không khớp");
+            setRegErr("Mật khẩu không khớp.");
             return;
         }
 
@@ -113,7 +111,6 @@ export default function LoginRegister() {
                     alignItems: "center",
                 }}
             >
-                {/* LOGIN */}
                 <Box
                     component="form"
                     onSubmit={onLogin}
@@ -130,7 +127,7 @@ export default function LoginRegister() {
                     <Typography variant="h6">Đăng nhập</Typography>
 
                     {loginErr && (
-                        <Alert severity="error" sx={{ mt: 1 }}>
+                        <Alert severity="error" sx={{ mt: 1 }} id="login-error">
                             {loginErr}
                         </Alert>
                     )}
@@ -141,6 +138,8 @@ export default function LoginRegister() {
                         onChange={onLoginChange("login_name")}
                         fullWidth
                         margin="normal"
+                        error={!!loginErr}
+                        aria-describedby={loginErr ? "login-error" : undefined}
                     />
                     <TextField
                         label="Mật khẩu"
@@ -149,6 +148,8 @@ export default function LoginRegister() {
                         onChange={onLoginChange("password")}
                         fullWidth
                         margin="normal"
+                        error={!!loginErr}
+                        aria-describedby={loginErr ? "login-error" : undefined}
                     />
 
                     <Button
@@ -172,7 +173,6 @@ export default function LoginRegister() {
                     </Button>
                 </Box>
 
-                {/* REGISTER */}
                 {showRegister && (
                     <Box
                         component="form"
@@ -196,25 +196,45 @@ export default function LoginRegister() {
                         </Box>
 
                         {regErr && (
-                            <Alert severity="error" sx={{ mt: 1 }}>
+                            <Alert severity="error" sx={{ mt: 1 }} id="register-error">
                                 {regErr}
                             </Alert>
                         )}
                         {regOk && (
-                            <Alert severity="success" sx={{ mt: 1 }}>
+                            <Alert severity="success" sx={{ mt: 1 }} id="register-success">
                                 {regOk}
                             </Alert>
                         )}
 
                         <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, mt: 1 }}>
-                            <TextField label="Họ và tên đệm" value={reg.first_name} onChange={onRegChange("first_name")} />
-                            <TextField label="Tên" value={reg.last_name} onChange={onRegChange("last_name")} />
-                            <TextField label="Tên đăng nhập" value={reg.login_name} onChange={onRegChange("login_name")} />
+                            <TextField
+                                label="Họ và tên đệm"
+                                value={reg.first_name}
+                                onChange={onRegChange("first_name")}
+                                error={!!regErr}
+                                aria-describedby={regErr ? "register-error" : undefined}
+                            />
+                            <TextField
+                                label="Tên"
+                                value={reg.last_name}
+                                onChange={onRegChange("last_name")}
+                                error={!!regErr}
+                                aria-describedby={regErr ? "register-error" : undefined}
+                            />
+                            <TextField
+                                label="Tên đăng nhập"
+                                value={reg.login_name}
+                                onChange={onRegChange("login_name")}
+                                error={!!regErr}
+                                aria-describedby={regErr ? "register-error" : undefined}
+                            />
                             <TextField
                                 label="Mật khẩu"
                                 type="password"
                                 value={reg.password}
                                 onChange={onRegChange("password")}
+                                error={!!regErr}
+                                aria-describedby={regErr ? "register-error" : undefined}
                             />
                             <TextField
                                 label="Xác nhận mật khẩu"
@@ -222,10 +242,22 @@ export default function LoginRegister() {
                                 value={regPassword2}
                                 onChange={(e) => setRegPassword2(e.target.value)}
                                 error={!passwordsMatch}
-                                helperText={!passwordsMatch ? "Mật khẩu phải khớp" : " "}
+                                helperText={!passwordsMatch ? "Mật khẩu phải khớp." : " "}
                             />
-                            <TextField label="Địa chỉ" value={reg.location} onChange={onRegChange("location")} />
-                            <TextField label="Nghề nghiệp" value={reg.occupation} onChange={onRegChange("occupation")} />
+                            <TextField
+                                label="Địa chỉ"
+                                value={reg.location}
+                                onChange={onRegChange("location")}
+                                error={!!regErr}
+                                aria-describedby={regErr ? "register-error" : undefined}
+                            />
+                            <TextField
+                                label="Nghề nghiệp"
+                                value={reg.occupation}
+                                onChange={onRegChange("occupation")}
+                                error={!!regErr}
+                                aria-describedby={regErr ? "register-error" : undefined}
+                            />
                         </Box>
 
                         <TextField
@@ -236,6 +268,8 @@ export default function LoginRegister() {
                             margin="normal"
                             multiline
                             minRows={3}
+                            error={!!regErr}
+                            aria-describedby={regErr ? "register-error" : undefined}
                         />
 
                         <Button
