@@ -1,5 +1,16 @@
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import User from '../models/User.js';
+import RefreshToken from '../models/RefreshToken.js';
+import {
+    signAccessToken,
+    signRefreshToken,
+    sha256,
+} from '../utils/tokens.js';
+import {
+    getAccessCookieOptions,
+    getRefreshCookieOptions,
+} from '../config/cookies.js';
 
 export async function login(req, res) {
     try {
@@ -21,11 +32,34 @@ export async function login(req, res) {
             role: user.role || "user",
         };
 
-        const token = jwt.sign(payload, process.env.JWT_SECRET, {
-            expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+        const family = randomUUID();
+        const accessToken = signAccessToken(user._id);
+        const refreshToken = signRefreshToken(user._id, family);
+        const decodedRefresh = jwt.decode(refreshToken);
+
+        if (!decodedRefresh?.jti || !decodedRefresh?.exp) {
+            throw new Error('Invalid refresh token payload');
+        }
+
+        await RefreshToken.create({
+            user: user._id,
+            tokenHash: sha256(refreshToken),
+            jti: decodedRefresh.jti,
+            family,
+            expiresAt: new Date(decodedRefresh.exp * 1000),
+            ip: req.ip,
+            userAgent: req.get('user-agent') || '',
         });
 
-        return res.status(200).json({ token, user: payload });
+        res.cookie('access_token', accessToken, getAccessCookieOptions());
+        res.cookie('refresh_token', refreshToken, getRefreshCookieOptions());
+
+        const responseBody = { user: payload };
+        if (process.env.RETURN_ACCESS_TOKEN_IN_BODY === 'true') {
+            responseBody.token = accessToken;
+        }
+
+        return res.status(200).json(responseBody);
     } catch (err) {
         console.error('login error:', err);
         return res.status(500).send('Server error');
@@ -33,8 +67,7 @@ export async function login(req, res) {
 }
 
 export async function logout(req, res) {
-    const token = req.headers["authorization"]?.split(" ")[1];
-    if (!token) return res.status(400).send('Not logged in');
-
+    res.clearCookie('access_token', getAccessCookieOptions());
+    res.clearCookie('refresh_token', getRefreshCookieOptions());
     return res.status(200).send();
 }
