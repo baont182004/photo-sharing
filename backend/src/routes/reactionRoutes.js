@@ -1,6 +1,6 @@
 import express from "express";
-import { verifyToken } from "../middleware/verifyToken.js";
-import { rateLimit } from "../middleware/rateLimit.js";
+import { verifyToken } from "../middlewares/auth.js";
+import { rateLimit } from "../middlewares/rateLimit.js";
 import { reactToPhoto, reactToComment } from "../controllers/reactionController.js";
 
 const router = express.Router();

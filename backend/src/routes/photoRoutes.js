@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyToken } from '../middleware/verifyToken.js';
+import { verifyToken } from '../middlewares/auth.js';
 import { upload } from '../services/uploadService.js';
 import {
     uploadNewPhoto,

@@ -1,7 +1,7 @@
 import express from 'express';
 import { login, logout } from '../controllers/authController.js';
 import { getAdminUsers } from '../controllers/adminController.js';
-import { verifyAdmin } from '../middleware/verifyToken.js';
+import { verifyAdmin } from '../middlewares/auth.js';
 import adminStatsRoutes from './adminStatsRoutes.js';
 
 const router = express.Router();
