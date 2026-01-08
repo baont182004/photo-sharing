@@ -9,6 +9,8 @@ import { isValidObjectId, safeTrim } from '../utils/validators.js';
 const USER_PUBLIC_FIELDS = '_id first_name last_name';
 const USER_DETAIL_FIELDS =
     '_id first_name last_name location description occupation login_name';
+const USER_ME_FIELDS =
+    '_id first_name last_name location description occupation login_name role';
 
 // Get /user/list
 export const getUserList = asyncHandler(async (req, res) => {
@@ -26,6 +28,21 @@ export const getUserById = asyncHandler(async (req, res) => {
     if (!user) {
         return notFound(res, { error: 'User not found' });
     }
+    return ok(res, user);
+});
+
+// GET /user/me
+export const getMe = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    if (!isValidObjectId(userId)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const user = await User.findById(userId, USER_ME_FIELDS).lean();
+    if (!user) {
+        return notFound(res, { error: 'User not found' });
+    }
+
     return ok(res, user);
 });
 

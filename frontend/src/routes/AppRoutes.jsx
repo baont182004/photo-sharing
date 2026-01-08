@@ -1,6 +1,6 @@
 // src/routes/AppRoutes.jsx
 import React from "react";
-import { Routes, Route } from "react-router-dom";
+import { Navigate, Routes, Route } from "react-router-dom";
 import AppLayout from "../layouts/AppLayout";
 
 import Home from "../pages/public/Home";
@@ -27,6 +27,7 @@ export default function AppRoutes() {
             <Route element={<AppLayout />}>
                 <Route path="/" element={<Home />} />
 
+                <Route path="/login" element={<Navigate to="/loginregister" replace />} />
                 <Route path="/loginregister" element={<LoginRegister />} />
 
                 <Route element={<ProtectedRoute />}>

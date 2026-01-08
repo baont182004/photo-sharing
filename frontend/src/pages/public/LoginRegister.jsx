@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, TextField, Typography } from "@mui/material";
-import { api, setAuth } from "../../config/api";
+import { api, refreshMe, setAuth } from "../../config/api";
 import { API_PATHS } from "../../config/apiPaths";
 
 const emptyRegister = {
@@ -51,7 +51,8 @@ export default function LoginRegister() {
                 login_name: loginForm.login_name,
                 password: loginForm.password,
             });
-            setAuth({ token: data.token, user: data.user });
+            setAuth({ user: data.user });
+            await refreshMe();
             const goBack = loc.state?.from;
             nav(goBack || `/users/${data.user._id}`);
         } catch (err) {

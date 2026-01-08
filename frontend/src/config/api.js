@@ -3,30 +3,59 @@ import { API_PATHS } from "./apiPaths";
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 const AUTH_EVENT = 'authchange';
+let authUser = null;
+
+try {
+    const stored = JSON.parse(localStorage.getItem('user') || 'null');
+    if (stored && stored._id) authUser = stored;
+} catch {
+}
 
 // ===== Auth storage =====
 export function getToken() {
-    return localStorage.getItem('token');
+    return null;
 }
 
 export function getUser() {
-    try {
-        return JSON.parse(localStorage.getItem('user') || 'null');
-    } catch {
-        return null;
-    }
+    return authUser;
 }
 
 export function setAuth({ token, user }) {
-    if (token) localStorage.setItem('token', token);
-    if (user) localStorage.setItem('user', JSON.stringify(user));
+    if (user) {
+        const safeUser = {
+            _id: user._id,
+            login_name: user.login_name,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            role: user.role,
+        };
+        authUser = safeUser;
+        try {
+            localStorage.setItem('user', JSON.stringify(safeUser));
+        } catch {
+        }
+    }
     window.dispatchEvent(new Event(AUTH_EVENT));
 }
 
 export function clearAuth() {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    authUser = null;
+    try {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+    } catch {
+    }
     window.dispatchEvent(new Event(AUTH_EVENT));
+}
+
+export async function refreshMe() {
+    try {
+        const me = await api.get(API_PATHS.user.me());
+        if (me) setAuth({ user: me });
+        return me;
+    } catch {
+        return null;
+    }
 }
 
 // ===== Helpers =====
@@ -51,9 +80,15 @@ async function parseResponse(res, fallbackMessage = 'API error') {
 
 function authHeaders(hasBody = false) {
     const token = getToken();
+    const csrfToken = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith('csrf_token='))
+        ?.split('=')[1];
+
     return {
         ...(hasBody ? { 'Content-Type': 'application/json' } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(csrfToken ? { 'x-csrf-token': decodeURIComponent(csrfToken) } : {}),
     };
 }
 
@@ -63,6 +98,7 @@ async function request(path, { method = 'GET', body } = {}) {
         method,
         headers: authHeaders(!!body),
         body: body ? JSON.stringify(body) : undefined,
+        credentials: 'include',
     });
     return parseResponse(res);
 }
@@ -87,10 +123,21 @@ export async function uploadPhoto(file, description = '') {
     form.append('uploadedphoto', file);
     if (description) form.append('description', description);
 
+    const csrfToken = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith('csrf_token='))
+        ?.split('=')[1];
+
     const res = await fetch(`${API_URL}${API_PATHS.photos.create()}`, {
         method: 'POST',
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(csrfToken
+                ? { 'x-csrf-token': decodeURIComponent(csrfToken) }
+                : {}),
+        },
         body: form,
+        credentials: 'include',
     });
 
     return parseResponse(res, 'Upload failed');

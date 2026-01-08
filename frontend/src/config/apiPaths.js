@@ -3,8 +3,12 @@ export const API_PATHS = {
         list: () => "/user/list",
         search: (term) => `/user/search?name=${encodeURIComponent(term)}`,
         byId: (id) => `/user/${id}`,
+        me: () => "/user/me",
         meStats: () => "/user/me/stats",
         register: () => "/user",
+    },
+    auth: {
+        logout: () => "/api/auth/logout",
     },
     admin: {
         login: () => "/admin/login",

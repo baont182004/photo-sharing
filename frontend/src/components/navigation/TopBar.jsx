@@ -13,7 +13,7 @@ import {
     TextField,
 } from "@mui/material";
 import { Link, useMatch, useNavigate } from "react-router-dom";
-import { api, getUser, getToken, uploadPhoto } from "../../config/api";
+import { api, getUser, uploadPhoto } from "../../config/api";
 import { API_PATHS } from "../../config/apiPaths";
 import { useThemeMode } from "../../context/ThemeModeContext";
 import useToastErrors from "../../hooks/useToastErrors";
@@ -51,7 +51,7 @@ export default function TopBar() {
             return;
         }
 
-        if (!getToken()) {
+        if (!getUser()?._id) {
             setContextText("Ứng dụng chia sẻ ảnh");
             return;
         }
@@ -213,3 +213,4 @@ export default function TopBar() {
         </AppBar>
     );
 }
+
