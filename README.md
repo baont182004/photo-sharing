@@ -1,10 +1,10 @@
 # Photo Sharing App
 
-Nguyễn Thái Bảo - PTIT
+Nguyễn Thái Bảo - PTIT  
 Dự án cá nhân môn Lập trình web của TS. Dương Trần Đức - PTIT.
 
-Đây là ứng dụng chia sẻ ảnh theo mô hình MERN (MongoDB, Express, React, Node.js).
-Frontend viết bằng React, backend dùng Node.js/Express và MongoDB làm cơ sở dữ liệu.
+Ứng dụng chia sẻ ảnh theo mô hình MERN (MongoDB, Express, React, Node.js).  
+Frontend: React. Backend: Node.js/Express. Database: MongoDB.  
 Ảnh được upload và lưu trữ trên Cloudinary.
 
 ## Tính năng
@@ -24,6 +24,13 @@ Frontend viết bằng React, backend dùng Node.js/Express và MongoDB làm cơ
 - Double-submit CSRF khi cross-domain (`CROSS_SITE_COOKIES=true`)
 - Rate limit cho refresh endpoint
 - Upload giới hạn size + allowlist MIME + kiểm tra file type thực tế
+
+## Công nghệ
+- Frontend: React
+- Backend: Node.js, Express
+- Database: MongoDB (Mongoose)
+- Image storage: Cloudinary
+- API: REST
 
 ## Chạy dự án
 1) Tạo file môi trường theo `.env.example`
