@@ -6,6 +6,7 @@ import {
     Typography,
     Button,
     Box,
+    Avatar,
     Dialog,
     DialogActions,
     DialogContent,
@@ -120,6 +121,12 @@ export default function TopBar() {
         }
     };
 
+    const displayName =
+        me?.display_name ||
+        `${me?.first_name || ""} ${me?.last_name || ""}`.trim() ||
+        "User";
+    const handleText = me?.handle ? `@${me.handle}` : "";
+
     return (
         <AppBar position="static">
             <Toolbar>
@@ -137,7 +144,36 @@ export default function TopBar() {
                     <Typography variant="body1">Vui lòng đăng nhập</Typography>
                 ) : (
                     <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
-                        <Typography variant="body1">Chào {me.first_name} {me.last_name}</Typography>
+                        <Box
+                            sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                px: 1,
+                                py: 0.5,
+                                borderRadius: 2,
+                                bgcolor: "rgba(255,255,255,0.14)",
+                                border: "1px solid rgba(255,255,255,0.25)",
+                            }}
+                        >
+                            <Avatar
+                                src={me?.avatar_url || ""}
+                                alt={displayName}
+                                sx={{ width: 36, height: 36 }}
+                            />
+                            <Box sx={{ display: "flex", flexDirection: "column", lineHeight: 1.1, minWidth: 0 }}>
+                                <Typography variant="subtitle2" sx={{ fontWeight: 600 }} noWrap>
+                                    {displayName}
+                                </Typography>
+                                <Typography
+                                    variant="caption"
+                                    sx={{ color: "rgba(255,255,255,0.8)" }}
+                                    noWrap
+                                >
+                                    {handleText}
+                                </Typography>
+                            </Box>
+                        </Box>
 
                         <input
                             ref={fileRef}

@@ -6,10 +6,12 @@ import {
     Paper,
     List,
     ListItem,
+    ListItemAvatar,
     ListItemText,
     Divider,
     Box,
     TextField,
+    Avatar,
 } from "@mui/material";
 import useUserSummaries from "../../hooks/useUserSummaries";
 
@@ -39,10 +41,7 @@ export default function UserList() {
     return (
         <Paper sx={{ p: 2 }}>
             <Typography variant="h5" gutterBottom>
-                Khám phá người dùng
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                Gõ tên để tìm nhanh. Bấm vào người dùng để xem hồ sơ và gửi kết bạn.
+                Tìm kiếm người dùng
             </Typography>
 
             <TextField
@@ -58,12 +57,25 @@ export default function UserList() {
                 {users.map((user) => {
                     const photoCount = getPhotoCount(user._id);
                     const commentCount = getCommentCount(user._id);
+                    const displayName =
+                        user.display_name ||
+                        `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+                        "User";
+                    const handleText = user.handle ? `@${user.handle}` : "";
 
                     return (
                         <React.Fragment key={user._id}>
                             <ListItem button component={Link} to={`/users/${user._id}`}>
+                                <ListItemAvatar>
+                                    <Avatar
+                                        src={user.avatar_url || ""}
+                                        alt={displayName}
+                                        sx={{ width: 40, height: 40 }}
+                                    />
+                                </ListItemAvatar>
                                 <ListItemText
-                                    primary={`${user.first_name} ${user.last_name}`}
+                                    primary={displayName}
+                                    secondary={handleText || null}
                                 />
 
                                 <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>

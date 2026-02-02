@@ -5,12 +5,14 @@ import Friendship from '../models/Friendship.js';
 import asyncHandler from '../middlewares/asyncHandler.js';
 import { ok, badRequest, notFound } from '../utils/http.js';
 import { isValidObjectId, safeTrim } from '../utils/validators.js';
+import { uploadImageBuffer } from '../services/uploadService.js';
+import { deleteImageByPublicId } from '../config/cloudinary.js';
 
-const USER_PUBLIC_FIELDS = '_id first_name last_name';
+const USER_PUBLIC_FIELDS = '_id first_name last_name display_name handle avatar_url';
 const USER_DETAIL_FIELDS =
-    '_id first_name last_name location description occupation login_name';
+    '_id first_name last_name display_name handle avatar_url location description occupation login_name';
 const USER_ME_FIELDS =
-    '_id first_name last_name location description occupation login_name role';
+    '_id first_name last_name display_name handle avatar_url location description occupation login_name role';
 
 // Get /user/list
 export const getUserList = asyncHandler(async (req, res) => {
@@ -46,6 +48,76 @@ export const getMe = asyncHandler(async (req, res) => {
     return ok(res, user);
 });
 
+// PUT /user/me
+export const updateMe = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    if (!isValidObjectId(userId)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        return notFound(res, { error: 'User not found' });
+    }
+
+    const isOAuthUser =
+        user.auth_provider && user.auth_provider !== 'local' && user.auth_provider !== 'admin';
+
+    const {
+        first_name,
+        last_name,
+        location,
+        description,
+        occupation,
+        display_name,
+    } = req.body || {};
+
+    if (isOAuthUser && (first_name !== undefined || last_name !== undefined || display_name !== undefined)) {
+        return badRequest(res, { error: 'OAuth accounts cannot update name fields' });
+    }
+
+    const updates = {};
+
+    if (!isOAuthUser) {
+        if (first_name !== undefined) {
+            const value = safeTrim(first_name);
+            if (!value) return badRequest(res, { error: 'first_name is required' });
+            updates.first_name = value;
+        }
+        if (last_name !== undefined) {
+            const value = safeTrim(last_name);
+            if (!value) return badRequest(res, { error: 'last_name is required' });
+            updates.last_name = value;
+        }
+        if (display_name !== undefined) updates.display_name = String(display_name).trim();
+    }
+
+    if (location !== undefined) updates.location = String(location).trim();
+    if (description !== undefined) updates.description = String(description).trim();
+    if (occupation !== undefined) updates.occupation = String(occupation).trim();
+
+    if (Object.keys(updates).length === 0) {
+        return badRequest(res, { error: 'No data to update' });
+    }
+
+    Object.assign(user, updates);
+    await user.save();
+
+    return ok(res, {
+        _id: user._id,
+        login_name: user.login_name,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        display_name: user.display_name,
+        handle: user.handle,
+        avatar_url: user.avatar_url,
+        location: user.location,
+        description: user.description,
+        occupation: user.occupation,
+        role: user.role,
+    });
+});
+
 // GET /user/me/stats
 export const getMyStats = asyncHandler(async (req, res) => {
     const userId = req.user?._id;
@@ -78,6 +150,38 @@ export const getMyStats = asyncHandler(async (req, res) => {
         totalLikes,
         totalDislikes,
         totalReactions: totalLikes + totalDislikes,
+    });
+});
+
+// PUT /user/me/avatar
+export const updateAvatar = asyncHandler(async (req, res) => {
+    const userId = req.user?._id;
+    if (!isValidObjectId(userId)) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!req.file?.buffer) {
+        return badRequest(res, { error: 'No file uploaded' });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        return notFound(res, { error: 'User not found' });
+    }
+
+    const oldPublicId = user.avatar_public_id;
+    const uploaded = await uploadImageBuffer(req.file.buffer);
+
+    user.avatar_url = uploaded.secure_url;
+    user.avatar_public_id = uploaded.public_id;
+    await user.save();
+
+    if (oldPublicId && oldPublicId !== user.avatar_public_id) {
+        deleteImageByPublicId(oldPublicId);
+    }
+
+    return ok(res, {
+        avatar_url: user.avatar_url,
     });
 });
 

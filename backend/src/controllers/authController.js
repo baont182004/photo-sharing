@@ -175,3 +175,34 @@ export async function logoutAll(req, res) {
     res.clearCookie('csrf_token', getCsrfCookieOptions());
     return res.status(200).json({ ok: true });
 }
+
+export async function getMe(req, res) {
+    try {
+        const userId = req.user?._id;
+        if (!userId) {
+            return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        const user = await User.findById(userId).select(
+            '_id display_name handle avatar_url auth_provider role'
+        ).lean();
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        console.log(
+            `[AUTH] /me | user_id=${userId} provider=${user.auth_provider || 'local'}`
+        );
+        return res.status(200).json({
+            id: user._id,
+            display_name: user.display_name || '',
+            handle: user.handle || '',
+            avatar_url: user.avatar_url || '',
+            auth_provider: user.auth_provider || 'local',
+            role: user.role || 'user',
+        });
+    } catch (err) {
+        console.error('getMe error:', err);
+        return res.status(500).send('Server error');
+    }
+}

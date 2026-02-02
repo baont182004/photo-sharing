@@ -23,11 +23,15 @@ export function getUser() {
 export function setAuth({ token, user }) {
     if (user) {
         const safeUser = {
-            _id: user._id,
+            _id: user._id || user.id,
             login_name: user.login_name,
             first_name: user.first_name,
             last_name: user.last_name,
             role: user.role,
+            display_name: user.display_name,
+            handle: user.handle,
+            avatar_url: user.avatar_url,
+            auth_provider: user.auth_provider,
         };
         authUser = safeUser;
         try {
@@ -51,6 +55,16 @@ export function clearAuth() {
 export async function refreshMe() {
     try {
         const me = await api.get(API_PATHS.user.me());
+        if (me) setAuth({ user: me });
+        return me;
+    } catch {
+        return null;
+    }
+}
+
+export async function hydrateUser() {
+    try {
+        const me = await api.get(API_PATHS.auth.me());
         if (me) setAuth({ user: me });
         return me;
     } catch {
@@ -141,6 +155,31 @@ export async function uploadPhoto(file, description = '') {
     });
 
     return parseResponse(res, 'Upload failed');
+}
+
+export async function uploadAvatar(file) {
+    const token = getToken();
+    const form = new FormData();
+    form.append('avatar', file);
+
+    const csrfToken = document.cookie
+        .split('; ')
+        .find((c) => c.startsWith('csrf_token='))
+        ?.split('=')[1];
+
+    const res = await fetch(`${API_URL}${API_PATHS.user.meAvatar()}`, {
+        method: 'PUT',
+        headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(csrfToken
+                ? { 'x-csrf-token': decodeURIComponent(csrfToken) }
+                : {}),
+        },
+        body: form,
+        credentials: 'include',
+    });
+
+    return parseResponse(res, 'Upload avatar failed');
 }
 
 export { API_URL };

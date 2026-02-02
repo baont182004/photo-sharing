@@ -19,7 +19,21 @@ const userSchema = new mongoose.Schema({
   description: { type: String, default: "" },
   occupation: { type: String, default: "" },
   role: { type: String, enum: ["user", "admin"], default: "user" },
+  auth_provider: {
+    type: String,
+    enum: ["github", "google", "facebook", "local", "admin"],
+    default: "local",
+    index: true,
+  },
+  provider_user_id: { type: String, index: true },
+  display_name: { type: String },
+  handle: { type: String, index: true },
+  avatar_url: { type: String },
+  avatar_public_id: { type: String },
+  primary_email: { type: String, default: null },
 }, { timestamps: true })
+
+userSchema.index({ auth_provider: 1, provider_user_id: 1 }, { unique: false });
 
 const User = mongoose.model("User", userSchema);
 

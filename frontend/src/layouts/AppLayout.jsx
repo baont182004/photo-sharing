@@ -3,7 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Link, Outlet, useMatch, useNavigate } from "react-router-dom";
 import { Box, Button } from "@mui/material";
 import TopBar from "../components/navigation/TopBar";
-import { api, clearAuth, getUser, refreshMe } from "../config/api";
+import { api, clearAuth, getUser, hydrateUser } from "../config/api";
 import { API_PATHS } from "../config/apiPaths";
 import UserSidebar from "../components/users/UserSidebar";
 
@@ -21,8 +21,15 @@ export default function AppLayout() {
     }, []);
 
     useEffect(() => {
-        refreshMe().then((me) => {
+        console.log("[FE] Redirected back, hydrating /me...");
+        hydrateUser().then((me) => {
             if (me) setUser(me);
+            if (me) {
+                console.log("[FE] Hydrated user:", {
+                    display_name: me.display_name,
+                    handle: me.handle,
+                });
+            }
         });
     }, []);
 

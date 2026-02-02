@@ -12,6 +12,7 @@ import photoRoutes from './routes/photoRoutes.js';
 import friendRoutes from './routes/friendRoutes.js';
 import reactionRoutes from './routes/reactionRoutes.js';
 import errorHandler from './middlewares/errorHandler.js';
+import { requestId } from './middlewares/requestId.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -24,6 +25,7 @@ app.use(
 );
 app.use(cookieParser());
 app.use(express.json());
+app.use(requestId);
 app.use(csrfGuard);
 
 app.use('/admin', adminRoutes);

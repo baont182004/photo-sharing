@@ -1,5 +1,5 @@
 // src/pages/protected/Profile.jsx
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
     Box,
     Button,
@@ -8,8 +8,9 @@ import {
     Paper,
     TextField,
     Typography,
+    Avatar,
 } from "@mui/material";
-import { api, getUser, imageUrl } from "../../config/api";
+import { api, getUser, imageUrl, refreshMe, uploadAvatar } from "../../config/api";
 import { API_PATHS } from "../../config/apiPaths";
 import PhotoComments from "../../components/comments/PhotoComments";
 import ConfirmDialog from "../../components/common/ConfirmDialog";
@@ -29,6 +30,11 @@ export default function Profile() {
     const [editingDesc, setEditingDesc] = useState({});
     const [descDrafts, setDescDrafts] = useState({});
     const [savingDesc, setSavingDesc] = useState({});
+    const [editingProfile, setEditingProfile] = useState(false);
+    const [profileDraft, setProfileDraft] = useState({});
+    const [savingProfile, setSavingProfile] = useState(false);
+    const [avatarUploading, setAvatarUploading] = useState(false);
+    const avatarInputRef = useRef(null);
 
     const normalizePhoto = useCallback(
         (p) => ({
@@ -121,6 +127,92 @@ export default function Profile() {
         if (!authUser?._id) return false;
         const ownerId = photo.user_id?._id || photo.user_id;
         return String(ownerId) === authUser._id;
+    };
+
+    const handlePickAvatar = () => avatarInputRef.current?.click();
+
+    const handleAvatarChange = async (e) => {
+        const file = e.target.files?.[0];
+        e.target.value = "";
+        if (!file) return;
+
+        if (file.size > 5 * 1024 * 1024) {
+            showError(null, "Ảnh đại diện phải nhỏ hơn 5MB.");
+            return;
+        }
+
+        setAvatarUploading(true);
+        try {
+            await uploadAvatar(file);
+            const me = await refreshMe();
+            if (me?._id) {
+                const updated = await api.get(API_PATHS.user.byId(me._id));
+                setDetail(updated);
+            }
+            showSuccess("Đã cập nhật ảnh đại diện.");
+        } catch (err) {
+            showError(err, "Không thể cập nhật ảnh đại diện.");
+        } finally {
+            setAvatarUploading(false);
+        }
+    };
+
+    const startEditProfile = () => {
+        if (!detail) return;
+        setProfileDraft({
+            ...(isOAuthUser
+                ? {}
+                : {
+                      first_name: detail.first_name || "",
+                      last_name: detail.last_name || "",
+                  }),
+            location: detail.location || "",
+            occupation: detail.occupation || "",
+            description: detail.description || "",
+        });
+        setEditingProfile(true);
+    };
+
+    const cancelEditProfile = () => {
+        setEditingProfile(false);
+        setProfileDraft({});
+    };
+
+    const handleProfileFieldChange = (field) => (e) => {
+        setProfileDraft((prev) => ({ ...prev, [field]: e.target.value }));
+    };
+
+    const saveProfile = async () => {
+        const firstName = (profileDraft.first_name || "").trim();
+        const lastName = (profileDraft.last_name || "").trim();
+        if (!isOAuthUser && (!firstName || !lastName)) {
+            showError(null, "Họ và tên là bắt buộc.");
+            return;
+        }
+
+        setSavingProfile(true);
+        try {
+            const payload = {
+                ...(isOAuthUser
+                    ? {}
+                    : {
+                          first_name: firstName,
+                          last_name: lastName,
+                      }),
+                location: (profileDraft.location || "").trim(),
+                occupation: (profileDraft.occupation || "").trim(),
+                description: (profileDraft.description || "").trim(),
+            };
+            const updated = await api.put(API_PATHS.user.me(), payload);
+            setDetail(updated);
+            await refreshMe();
+            showSuccess("Đã cập nhật hồ sơ.");
+            setEditingProfile(false);
+        } catch (err) {
+            showError(err, "Không thể cập nhật hồ sơ.");
+        } finally {
+            setSavingProfile(false);
+        }
     };
 
     const updatePhotoInState = (updatedPhoto) =>
@@ -228,23 +320,67 @@ export default function Profile() {
     if (!authUser?._id) {
         return <Typography>Đăng nhập để xem hồ sơ của bạn.</Typography>;
     }
+    const displayName =
+        detail?.display_name ||
+        authUser?.display_name ||
+        `${authUser?.first_name || ""} ${authUser?.last_name || ""}`.trim() ||
+        "User";
+    const handleText = detail?.handle || authUser?.handle || "";
+    const authProvider = detail?.auth_provider || authUser?.auth_provider || "local";
+    const isOAuthUser = authProvider !== "local" && authProvider !== "admin";
 
     return (
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
             <Paper sx={{ p: 3, borderRadius: 3, boxShadow: 2 }}>
-                <Typography variant="h5" gutterBottom>
-                    Hồ sơ của bạn
-                </Typography>
+                <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
+                    <Avatar
+                        src={detail?.avatar_url || authUser?.avatar_url || ""}
+                        alt={displayName}
+                        sx={{ width: 72, height: 72 }}
+                    />
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h5" gutterBottom>
+                            Hồ sơ của bạn
+                        </Typography>
+                        <Typography variant="subtitle1">
+                            Xin chào <b>{displayName}</b>{" "}
+                            ({authUser?.role === "admin" ? "quản trị" : "người dùng"})
+                        </Typography>
+                        {handleText && (
+                            <Typography variant="body2" color="text.secondary">
+                                @{handleText}
+                            </Typography>
+                        )}
+                    </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, ml: "auto" }}>
+                        <input
+                            ref={avatarInputRef}
+                            type="file"
+                            accept="image/*"
+                            style={{ display: "none" }}
+                            onChange={handleAvatarChange}
+                            aria-label="Chọn ảnh đại diện"
+                        />
+                        <Button
+                            variant="outlined"
+                            size="small"
+                            onClick={handlePickAvatar}
+                            disabled={avatarUploading}
+                        >
+                            {avatarUploading ? "Đang cập nhật..." : "Đổi ảnh đại diện"}
+                        </Button>
+                        <Button
+                            variant="contained"
+                            size="small"
+                            onClick={startEditProfile}
+                            disabled={!detail || editingProfile}
+                        >
+                            Chỉnh sửa hồ sơ
+                        </Button>
+                    </Box>
+                </Box>
 
-                <Typography variant="subtitle1">
-                    Xin chào{" "}
-                    <b>
-                        {authUser?.first_name} {authUser?.last_name}
-                    </b>{" "}
-                    ({authUser?.role === "admin" ? "quản trị" : "người dùng"})
-                </Typography>
-
-                {detail && (
+                {detail && !editingProfile && (
                     <Box
                         sx={{
                             mt: 2,
@@ -256,7 +392,69 @@ export default function Profile() {
                         <Typography>Địa chỉ: {detail.location || "—"}</Typography>
                         <Typography>Nghề nghiệp: {detail.occupation || "—"}</Typography>
                         <Typography>Mô tả: {detail.description || "—"}</Typography>
-                        <Typography>Tên đăng nhập: {detail.login_name}</Typography>
+                        {!isOAuthUser && (
+                            <Typography>Tên đăng nhập: {detail.login_name}</Typography>
+                        )}
+                    </Box>
+                )}
+
+                {detail && editingProfile && (
+                    <Box sx={{ mt: 2, display: "grid", gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" }, gap: 2 }}>
+                        {!isOAuthUser && (
+                            <>
+                                <TextField
+                                    label="Họ"
+                                    size="small"
+                                    value={profileDraft.first_name || ""}
+                                    onChange={handleProfileFieldChange("first_name")}
+                                    required
+                                />
+                                <TextField
+                                    label="Tên"
+                                    size="small"
+                                    value={profileDraft.last_name || ""}
+                                    onChange={handleProfileFieldChange("last_name")}
+                                    required
+                                />
+                            </>
+                        )}
+                        <TextField
+                            label="Địa chỉ"
+                            size="small"
+                            value={profileDraft.location || ""}
+                            onChange={handleProfileFieldChange("location")}
+                        />
+                        <TextField
+                            label="Nghề nghiệp"
+                            size="small"
+                            value={profileDraft.occupation || ""}
+                            onChange={handleProfileFieldChange("occupation")}
+                        />
+                        <TextField
+                            label="Mô tả"
+                            size="small"
+                            value={profileDraft.description || ""}
+                            onChange={handleProfileFieldChange("description")}
+                            multiline
+                            minRows={2}
+                            sx={{ gridColumn: { xs: "1 / -1", sm: "1 / -1" } }}
+                        />
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                            <Button
+                                variant="contained"
+                                onClick={saveProfile}
+                                disabled={savingProfile}
+                            >
+                                {savingProfile ? "Đang lưu..." : "Lưu"}
+                            </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={cancelEditProfile}
+                                disabled={savingProfile}
+                            >
+                                Hủy
+                            </Button>
+                        </Box>
                     </Box>
                 )}
 

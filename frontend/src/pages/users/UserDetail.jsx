@@ -1,7 +1,7 @@
 // src/pages/users/UserDetail.jsx
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Typography, Paper, Button, Box } from "@mui/material";
+import { Typography, Paper, Button, Box, Avatar } from "@mui/material";
 import { api, getUser, imageUrl } from "../../config/api";
 import { API_PATHS } from "../../config/apiPaths";
 import FriendButton from "../../components/friends/FriendButton";
@@ -52,6 +52,11 @@ export default function UserDetail() {
     }, [userId]);
 
     if (!user) return <div>Đang tải hồ sơ người dùng...</div>;
+    const displayName =
+        user.display_name ||
+        `${user.first_name || ""} ${user.last_name || ""}`.trim() ||
+        "User";
+    const handleText = user.handle || user.login_name || "";
 
     return (
         <Paper sx={{ p: 2 }}>
@@ -63,16 +68,25 @@ export default function UserDetail() {
                     alignItems: "flex-start",
                 }}
             >
-                <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography variant="h4" gutterBottom>
-                        {user.first_name} {user.last_name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                        Xem thông tin cơ bản và các ảnh đã đăng gần đây.
-                    </Typography>
-                    <Typography>Địa chỉ: {user.location || "Chưa cập nhật"}</Typography>
-                    <Typography>Nghề nghiệp: {user.occupation || "Chưa cập nhật"}</Typography>
-                    <Typography>Mô tả: {user.description || "Chưa cập nhật"}</Typography>
+                <Box sx={{ flex: 1, minWidth: 0, display: "flex", gap: 2, alignItems: "center" }}>
+                    <Avatar
+                        src={user.avatar_url || ""}
+                        alt={displayName}
+                        sx={{ width: 72, height: 72 }}
+                    />
+                    <Box sx={{ minWidth: 0 }}>
+                        <Typography variant="h4" gutterBottom>
+                            {displayName}
+                        </Typography>
+                        {handleText && (
+                            <Typography variant="body2" color="text.secondary" gutterBottom>
+                                @{handleText}
+                            </Typography>
+                        )}
+                        <Typography>Địa chỉ: {user.location || "Chưa cập nhật"}</Typography>
+                        <Typography>Nghề nghiệp: {user.occupation || "Chưa cập nhật"}</Typography>
+                        <Typography>Mô tả: {user.description || "Chưa cập nhật"}</Typography>
+                    </Box>
                 </Box>
 
                 <Box
@@ -105,9 +119,6 @@ export default function UserDetail() {
             <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
                     Ảnh đã đăng
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                    Xem nhanh các ảnh gần đây từ người dùng này.
                 </Typography>
 
                 {photoLoading && <Typography>Đang tải ảnh...</Typography>}

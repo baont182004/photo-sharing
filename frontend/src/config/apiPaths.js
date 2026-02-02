@@ -5,10 +5,12 @@ export const API_PATHS = {
         byId: (id) => `/user/${id}`,
         me: () => "/user/me",
         meStats: () => "/user/me/stats",
+        meAvatar: () => "/user/me/avatar",
         register: () => "/user",
     },
     auth: {
         logout: () => "/api/auth/logout",
+        me: () => "/api/auth/me",
     },
     admin: {
         login: () => "/admin/login",

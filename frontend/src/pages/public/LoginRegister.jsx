@@ -2,7 +2,7 @@
 import React, { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Alert, Box, Button, Paper, TextField, Typography } from "@mui/material";
-import { api, refreshMe, setAuth } from "../../config/api";
+import { api, refreshMe, setAuth, API_URL } from "../../config/api";
 import { API_PATHS } from "../../config/apiPaths";
 
 const emptyRegister = {
@@ -162,6 +162,17 @@ export default function LoginRegister() {
                         fullWidth
                     >
                         {loginLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                    </Button>
+                    <Button
+                        type="button"
+                        variant="outlined"
+                        sx={{ mt: 1 }}
+                        onClick={() => {
+                            window.location.href = `${API_URL}/api/auth/github`;
+                        }}
+                        fullWidth
+                    >
+                        Continue with GitHub
                     </Button>
 
                     <Button
